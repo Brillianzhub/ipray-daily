@@ -4,8 +4,7 @@ import { TouchableOpacity } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { router } from "expo-router";
 
-const DevotionLayout = () => {
-
+const SermonsLayout = () => {
 
     const handleBackPress = () => {
         router.replace('/home');
@@ -15,10 +14,10 @@ const DevotionLayout = () => {
         <>
             <Stack>
                 <Stack.Screen
-                    name="Devotion"
+                    name="SermonCollections"
                     options={{
                         headerShown: true,
-                        title: "Daily Devotion",
+                        title: "Sermon Collections",
                         headerTitleAlign: 'center',
                         headerLeft: () => (
                             <TouchableOpacity onPress={handleBackPress}>
@@ -29,10 +28,10 @@ const DevotionLayout = () => {
                 />
 
                 <Stack.Screen
-                    name="TimeTable"
+                    name="SermonsPage"
                     options={{
                         headerShown: true,
-                        title: "Contents",
+                        title: "Sermon Details",
                         headerTitleAlign: 'center',
                         headerLeft: () => (
                             <TouchableOpacity onPress={() => router.back()}>
@@ -49,4 +48,4 @@ const DevotionLayout = () => {
     );
 };
 
-export default DevotionLayout;
+export default SermonsLayout;

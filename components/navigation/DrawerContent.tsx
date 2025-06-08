@@ -9,9 +9,11 @@ import {
   SafeAreaView
 } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
-import { Book, Calendar, Home, Info, Mail, Moon, Music, HandHelping as PrayingHands, Settings, Sun } from 'lucide-react-native';
+import { Book, Calendar, Heart, Home, Info, Mail, Moon, Music, HandHelping as PrayingHands, Settings, Sun } from 'lucide-react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 
 const menuItems = [
   {
@@ -21,13 +23,13 @@ const menuItems = [
   },
   {
     label: 'Favorites',
-    icon: Info,
+    icon: Heart,
     path: '/(favorites)'
   },
   {
     label: 'About',
     icon: Info,
-    path: '/about'
+    path: '/(about)'
   },
   {
     label: 'Contact Us',
@@ -58,8 +60,8 @@ export default function DrawerContent(props: any) {
       marginTop: 8,
     },
     logo: {
-      width: 80,
-      height: 80,
+      width: 60,
+      height: 60,
       borderRadius: 40,
       marginBottom: 16,
     },
@@ -156,7 +158,7 @@ export default function DrawerContent(props: any) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Image
-          source={{ uri: 'https://images.pexels.com/photos/3825573/pexels-photo-3825573.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' }}
+          source={require('@/assets/images/logo.png')}
           style={styles.logo}
         />
         <Text style={styles.appName}>IPray Daily</Text>

@@ -1,51 +1,68 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+
+const images = {
+  sermons: require('../../assets/images/banner.jpg'),
+  nations: require('../../assets/images/banner2.jpg'),
+  churches: require('../../assets/images/banner.jpg'),
+  revival: require('../../assets/images/banner.jpg'),
+};
 
 const FEATURED_CONTENT = [
   {
     id: '1',
-    title: 'Understanding Psalms',
-    type: 'Bible Study',
-    image: 'https://images.pexels.com/photos/267568/pexels-photo-267568.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    title: 'Categorized Sermon Collections',
+    link: '/(sermons)',
+    type: 'Sermons',
+    image: images.sermons,
   },
   {
     id: '2',
-    title: 'Prayer for Beginners',
-    type: 'Guide',
-    image: 'https://images.pexels.com/photos/1178940/pexels-photo-1178940.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    title: 'Prayer for Nations',
+    link: '/(sermons)',
+    type: 'Intercession',
+    image: images.sermons,
   },
   {
     id: '3',
-    title: 'Modern Worship Songs',
-    type: 'Music',
-    image: 'https://images.pexels.com/photos/58557/pexels-photo-58557.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    title: 'Prayer for Churches',
+    link: '/(sermons)',
+    type: 'Intercession',
+    image: images.sermons,
   },
   {
     id: '4',
-    title: 'Faith in Practice',
-    type: 'Daily Life',
-    image: 'https://images.pexels.com/photos/1850177/pexels-photo-1850177.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    title: 'Prayers for Revival',
+    link: '/(sermons)',
+    type: 'Intercession',
+    image: images.sermons,
   },
 ];
 
+
 export default function FeaturedContent() {
+
+  const router = useRouter();
+
   return (
     <View style={styles.container}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Featured Content</Text>
-        <TouchableOpacity>
-          <Text style={styles.seeAllText}>See All</Text>
-        </TouchableOpacity>
       </View>
-      
-      <ScrollView 
+
+      <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {FEATURED_CONTENT.map((item) => (
-          <TouchableOpacity key={item.id} style={styles.card}>
-            <Image source={{ uri: item.image }} style={styles.cardImage} />
+          <TouchableOpacity
+            key={item.id}
+            style={styles.card}
+            onPress={() => router.push(item.link as any)}
+          >
+            <Image source={item.image} style={styles.cardImage} />
             <View style={styles.cardContent}>
               <Text style={styles.cardType}>{item.type}</Text>
               <Text style={styles.cardTitle}>{item.title}</Text>

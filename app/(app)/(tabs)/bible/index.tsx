@@ -1,12 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, FlatList } from 'react-native';
-import { Book, ChevronDown, BookOpen, Bookmark, Search, Share2 } from 'lucide-react-native';
+import { Book, ChevronDown, Bookmark, Search, Share2 } from 'lucide-react-native';
 import ChapterSelectorModal from '@/components/bible/ChapterSelectorModal';
 import VerseSelectorModal from '@/components/bible/VerseSelectorModal';
 import { getBibleBooks, Verse, getChapter, BibleVersion } from '@/lib/database';
 import { addFavorite, getAllFavorites } from '@/lib/user_db';
 import { VersionSelector } from '@/components/bible/VersionSelector';
 import { useBibleVersion } from '@/context/BibleVersionContext';
+import { useLocalSearchParams } from 'expo-router';
 
 type BibleBook = {
     id: string;
@@ -15,9 +16,22 @@ type BibleBook = {
     testament: 'old' | 'new';
 };
 
+const parseReference = (ref: string) => {
+    const match = ref.match(/^([1-3]?\s?[A-Za-z]+)\s+(\d+):(\d+)/);
+    if (!match) return null;
+    const [, bookName, chapterStr, verseStr] = match;
+    return {
+        book: bookName.trim(),
+        chapter: parseInt(chapterStr),
+        verse: parseInt(verseStr),
+    };
+};
+
+
 
 export default function BibleScreen() {
     const scrollViewRef = useRef<ScrollView>(null);
+    const { reference } = useLocalSearchParams();
 
     const [selectedTestament, setSelectedTestament] = useState('all');
     const [showingBookSelector, setShowingBookSelector] = useState(false);
@@ -63,6 +77,26 @@ export default function BibleScreen() {
 
         loadBooks();
     }, []);
+
+    useEffect(() => {
+        if (reference && bibleBooks.length > 0) {
+            const parsed = parseReference(reference as string);
+            if (!parsed) return;
+
+            const { book, chapter, verse } = parsed;
+
+            const matchedBook = bibleBooks.find(b =>
+                b.name.toLowerCase() === book.toLowerCase()
+            );
+
+            if (matchedBook) {
+                setSelectedBook(matchedBook);
+                setSelectedChapter(chapter);
+                setSelectedVerse(verse);
+            }
+        }
+    }, [reference, bibleBooks]);
+
 
     const filteredBooks = selectedTestament === 'all'
         ? bibleBooks
@@ -198,7 +232,6 @@ export default function BibleScreen() {
             console.warn('No verse selected to add to favorites.');
         }
     };
-
 
     const handleFetchFavorites = () => {
         const favorites = getAllFavorites();
