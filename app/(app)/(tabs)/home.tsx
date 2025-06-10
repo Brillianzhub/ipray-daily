@@ -33,7 +33,7 @@ export default function HomeScreen() {
   const { stats, loading } = useStats();
 
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0]; // e.g. '2025-06-07'
+    const today = new Date().toISOString().split('T')[0];
     fetchDevotionByDate(today);
   }, []);
 

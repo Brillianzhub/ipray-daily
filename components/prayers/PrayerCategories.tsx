@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
-import { router } from 'expo-router';
-
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 
 interface Category {
     id: number;
@@ -11,9 +9,10 @@ interface Category {
 interface PrayerCategoriesProps {
     categories: Category[];
     isLoading: boolean;
+    onSelectCategory: (categoryTitle: string) => void;
 }
 
-const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, isLoading }) => {
+const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, isLoading, onSelectCategory }) => {
     const [showAll, setShowAll] = useState(false);
 
     const getRandomColor = () => {
@@ -43,6 +42,7 @@ const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, isLoadi
                     <TouchableOpacity
                         key={category.id}
                         style={styles.categoryCard}
+                        onPress={() => onSelectCategory(category.title)}
                     >
                         <View style={[styles.iconContainer, { backgroundColor: getRandomColor() }]}>
                             <Text style={styles.iconText}>{category.title.slice(0, 3).toUpperCase()}</Text>
@@ -54,6 +54,8 @@ const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, isLoadi
         </View>
     );
 };
+
+
 
 const styles = StyleSheet.create({
     categoriesContainer: {

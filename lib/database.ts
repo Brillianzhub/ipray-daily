@@ -1,7 +1,7 @@
 import * as SQLite from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system';
 import { Asset } from 'expo-asset';
-import { version } from 'react';
+import { Platform } from 'react-native';
 
 export interface Verse {
     id: number;
@@ -44,55 +44,101 @@ export async function openDatabase(version: BibleVersion): Promise<SQLite.SQLite
         await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
     }
 
-    // Debug: list directory contents
-    const files = await FileSystem.readDirectoryAsync(sqliteDir);
-    console.log('SQLite directory contents:', files);
-
-    // Helper: Check if DB file is valid (exists and not empty)
+    // Helper: Check if DB file is valid
     const isDbValid = async (path: string) => {
         const info = await FileSystem.getInfoAsync(path);
-        return info.exists && info.size > 1024; // greater than 1KB
+        return info.exists && info.size > 1024;
     };
 
-    const dbIsValid = await isDbValid(dbPath);
-
-    if (!dbIsValid) {
+    if (!(await isDbValid(dbPath))) {
         try {
             const asset = Asset.fromModule(versionToAsset[version]);
             await asset.downloadAsync();
 
-            console.log('Asset local URI:', asset.localUri);
-
-            if (!asset.localUri || asset.localUri === 'file:' || asset.localUri.length <= 5) {
-                throw new Error(`Invalid local URI for asset: ${asset.localUri}`);
+            if (!asset.localUri) {
+                throw new Error(`Invalid local URI for asset`);
             }
 
-            const assetInfo = await FileSystem.getInfoAsync(asset.localUri);
-            if (assetInfo.exists) {
-                console.log('Asset size:', assetInfo.size);
-            } else {
-                console.warn('Asset file does not exist at URI:', asset.localUri);
-            }
-
-
-            console.log(`Copying DB from ${asset.localUri} to ${dbPath}`);
             await FileSystem.copyAsync({
                 from: asset.localUri,
                 to: dbPath,
             });
 
-            const copiedInfo = await FileSystem.getInfoAsync(dbPath);
+            // Verify copy
+            if (!(await isDbValid(dbPath))) {
+                throw new Error('Database copy failed');
+            }
         } catch (error) {
-            console.error(`Failed to initialize ${version} database:`, error);
-            throw new Error(`Could not copy ${version} database`);
+            console.error('Database initialization failed:', error);
+            throw new Error(`Could not initialize ${version} database`);
         }
-    } else {
-        console.log(`${dbFileName} already exists and is valid at ${dbPath}`);
     }
 
-    // Must use just the file name, not full path — works on both platforms
-    return SQLite.openDatabaseSync(dbFileName);
+    console.log(`Opening database at: ${dbPath}`);
+    return SQLite.openDatabaseSync(
+        Platform.OS === 'android' ? dbPath : dbFileName
+    );
 }
+
+// export async function openDatabase(version: BibleVersion): Promise<SQLite.SQLiteDatabase> {
+//     const sqliteDir = `${FileSystem.documentDirectory}SQLite`;
+//     const dbFileName = versionToDbName[version];
+//     const dbPath = `${sqliteDir}/${dbFileName}`;
+
+//     // Make sure the SQLite directory exists
+//     const sqliteDirInfo = await FileSystem.getInfoAsync(sqliteDir);
+//     if (!sqliteDirInfo.exists) {
+//         await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
+//     }
+
+//     // Debug: list directory contents
+//     const files = await FileSystem.readDirectoryAsync(sqliteDir);
+//     // console.log('SQLite directory contents:', files);
+
+//     // Helper: Check if DB file is valid (exists and not empty)
+//     const isDbValid = async (path: string) => {
+//         const info = await FileSystem.getInfoAsync(path);
+//         return info.exists && info.size > 1024; // greater than 1KB
+//     };
+
+//     const dbIsValid = await isDbValid(dbPath);
+
+//     if (!dbIsValid) {
+//         try {
+//             const asset = Asset.fromModule(versionToAsset[version]);
+//             await asset.downloadAsync();
+
+//             // console.log('Asset local URI:', asset.localUri);
+
+//             if (!asset.localUri || asset.localUri === 'file:' || asset.localUri.length <= 5) {
+//                 throw new Error(`Invalid local URI for asset: ${asset.localUri}`);
+//             }
+
+//             const assetInfo = await FileSystem.getInfoAsync(asset.localUri);
+//             if (assetInfo.exists) {
+//                 console.log('Asset size:', assetInfo.size);
+//             } else {
+//                 console.warn('Asset file does not exist at URI:', asset.localUri);
+//             }
+
+//             // console.log(`Copying DB from ${asset.localUri} to ${dbPath}`);
+//             await FileSystem.copyAsync({
+//                 from: asset.localUri,
+//                 to: dbPath,
+//             });
+
+//             const copiedInfo = await FileSystem.getInfoAsync(dbPath);
+//         } catch (error) {
+//             // console.error(`Failed to initialize ${version} database:`, error);
+//             throw new Error(`Could not copy ${version} database`);
+//         }
+//     } else {
+//         console.log(`${dbFileName} already exists and is valid at ${dbPath}`);
+//     }
+
+//     // Must use just the file name, not full path — works on both platforms
+//     return SQLite.openDatabaseSync(dbFileName);
+// }
 
 
 

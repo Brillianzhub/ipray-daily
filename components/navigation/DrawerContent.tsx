@@ -39,7 +39,7 @@ const menuItems = [
   {
     label: 'Settings',
     icon: Settings,
-    path: '/settings'
+    path: '/(settings)'
   }
 ];
 

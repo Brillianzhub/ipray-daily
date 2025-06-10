@@ -114,12 +114,13 @@ export default function HymnsScreen() {
                     keyExtractor={item => item.id.toString()}
                     style={styles.hymnsList}
                     contentContainerStyle={styles.hymnsListContent}
+                    showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={onRefresh}
-                            colors={['#1E3A8A']} 
-                            tintColor="#1E3A8A" 
+                            colors={['#1E3A8A']}
+                            tintColor="#1E3A8A"
                         />
                     }
                 />

@@ -28,7 +28,7 @@ export function insertPrayer(prayer: Prayer): void {
                 prayer.isFavorite ? 1 : 0,
             ]
         );
-        console.log('Prayer inserted.');
+        // console.log('Prayer inserted.');
     } catch (err) {
         console.error('Failed to insert prayer:', err);
     }
@@ -42,6 +42,15 @@ export function getAllPrayers(): any[] {
     } catch (err) {
         console.error('Error fetching prayers:', err);
         return [];
+    }
+}
+
+export function deletePrayer(id: string): void {
+    try {
+        prayersDb.runSync('DELETE FROM prayers WHERE id = ?', [id]);
+        // console.log(`Prayer with ID ${id} deleted.`);
+    } catch (err) {
+        console.error('Failed to delete prayer:', err);
     }
 }
 

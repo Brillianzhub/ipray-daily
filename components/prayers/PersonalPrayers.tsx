@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Check, Star, Trash } from 'lucide-react-native';
+import { deletePrayer, getAllPrayers } from '@/lib/user_prayers';
 
 type Prayer = {
     id: string;
@@ -22,7 +23,7 @@ type PrayerListProps = {
     PRAYER_CATEGORIES: Category[];
     onToggleFavorite: (id: string) => void;
     onToggleAnswered: (id: string) => void;
-    onDelete: (id: string) => void;
+    setPrayers: React.Dispatch<React.SetStateAction<Prayer[]>>;
 };
 
 const PrayerList: React.FC<PrayerListProps> = ({
@@ -30,8 +31,15 @@ const PrayerList: React.FC<PrayerListProps> = ({
     PRAYER_CATEGORIES,
     onToggleFavorite,
     onToggleAnswered,
-    onDelete
+    setPrayers
 }) => {
+
+    const handleDelete = (id: string) => {
+        deletePrayer(id);
+        const updatedPrayers = getAllPrayers();
+        setPrayers(updatedPrayers)
+    }
+
     return (
         <>
             {filteredPrayers.map((prayer: Prayer) => (
@@ -78,7 +86,7 @@ const PrayerList: React.FC<PrayerListProps> = ({
 
                         <TouchableOpacity
                             style={styles.deleteButton}
-                            onPress={() => onDelete(prayer.id)}
+                            onPress={() => handleDelete(prayer.id)}
                         >
                             <Trash size={16} color="#94A3B8" />
                         </TouchableOpacity>

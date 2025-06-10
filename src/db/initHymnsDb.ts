@@ -40,7 +40,7 @@ export async function initHymnsDb() {
       );
     `);
 
-    console.log('✅ Hymns DB initialized with execSync');
+    // console.log('✅ Hymns DB initialized with execSync');
   } catch (err) {
     console.error('❌ Failed to initialize hymns DB:', err);
   }

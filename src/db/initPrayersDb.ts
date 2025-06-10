@@ -25,7 +25,7 @@ export async function initPrayersDb() {
       );
     `);
 
-        console.log('Prayers table initialized.');
+        // console.log('Prayers table initialized.');
     } catch (err) {
         console.error('Error initializing prayers DB:', err);
     }

@@ -1,9 +1,9 @@
 // favorites.ts
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet,SafeAreaView } from 'react-native';
 import { getVerseById } from '@/lib/database';
-import { getAllFavorites } from '@/lib/user_db';
-
+import { getAllFavorites, removeFavorite } from '@/lib/user_db';
+import { Trash2 } from 'lucide-react-native';
 
 type Verse = {
     id: number;
@@ -83,8 +83,14 @@ export default function FavoritesPage() {
         );
     }
 
+    const handleRemoveFavorite = (id: number) => {
+        removeFavorite(id); // remove from DB
+        setFavorites(prev => prev.filter(fav => fav.id !== id)); // update state
+    };
+
+
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <FlatList
                 data={favorites}
                 keyExtractor={(item) => item.id.toString()}
@@ -94,18 +100,29 @@ export default function FavoritesPage() {
                             {item.verse?.book_name} {item.verse?.chapter_number}:{item.verse?.verse_number}
                         </Text>
                         <Text style={styles.text}>{item.verse?.text}</Text>
-                        <Text style={styles.date}>Saved on: {new Date(item.created_at).toLocaleDateString()}</Text>
+                        <View style={styles.footer}>
+                            <Text style={styles.date}>
+                                Saved on: {new Date(item.created_at).toLocaleDateString()}
+                            </Text>
+                            <Trash2
+                                size={16}
+                                color="#0284c7"
+                                style={styles.deleteIcon}
+                                onPress={() => handleRemoveFavorite(item.id)}
+                            />
+                        </View>
                     </View>
                 )}
+                showsVerticalScrollIndicator={false}
             />
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16,
+        padding: 20,
         backgroundColor: '#fff',
     },
     verseContainer: {
@@ -128,5 +145,15 @@ const styles = StyleSheet.create({
         color: '#666',
         fontStyle: 'italic',
     },
+
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    deleteIcon: {
+        marginLeft: 8,
+    },
+
 });
 

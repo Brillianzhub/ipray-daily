@@ -42,7 +42,7 @@ export async function initUserDb() {
       );
     `);
 
-    console.log('User data tables initialized.');
+    // console.log('User data tables initialized.');
   } catch (err) {
     console.error('Error initializing user database:', err);
   }

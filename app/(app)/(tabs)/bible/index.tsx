@@ -1,20 +1,28 @@
 import { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, FlatList } from 'react-native';
-import { Book, ChevronDown, Bookmark, Search, Share2 } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Book, ChevronDown, BookOpen, Heart, Search, Share2, SquarePen } from 'lucide-react-native';
 import ChapterSelectorModal from '@/components/bible/ChapterSelectorModal';
 import VerseSelectorModal from '@/components/bible/VerseSelectorModal';
 import { getBibleBooks, Verse, getChapter, BibleVersion } from '@/lib/database';
-import { addFavorite, getAllFavorites } from '@/lib/user_db';
+import { addFavorite, getAllFavorites, getCommentsForVerse, Comment } from '@/lib/user_db';
 import { VersionSelector } from '@/components/bible/VersionSelector';
 import { useBibleVersion } from '@/context/BibleVersionContext';
 import { useLocalSearchParams } from 'expo-router';
+import BookSelector from '@/components/bible/BookSelector';
+import { ListRenderItemInfo } from 'react-native';
+import ChapterNavigation from '@/components/bible/ChapterNavigation';
+import { shareVerse } from '@/utils/shareVerse';
+import { router } from 'expo-router';
+import CommentModal from '@/components/bible/AddCommentModal';
+import ReadCommentModal from '@/components/bible/ReadCommentModal';
+import { NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 
-type BibleBook = {
+export interface BibleBook {
     id: string;
     name: string;
     chapters: number;
     testament: 'old' | 'new';
-};
+}
 
 const parseReference = (ref: string) => {
     const match = ref.match(/^([1-3]?\s?[A-Za-z]+)\s+(\d+):(\d+)/);
@@ -28,12 +36,12 @@ const parseReference = (ref: string) => {
 };
 
 
-
 export default function BibleScreen() {
     const scrollViewRef = useRef<ScrollView>(null);
     const { reference } = useLocalSearchParams();
 
-    const [selectedTestament, setSelectedTestament] = useState('all');
+    const [selectedTestament, setSelectedTestament] = useState<'all' | 'old' | 'new'>('all');
+
     const [showingBookSelector, setShowingBookSelector] = useState(false);
     const [showChapterModal, setShowChapterModal] = useState(false);
     const [bibleBooks, setBibleBooks] = useState<BibleBook[]>([]);
@@ -52,11 +60,47 @@ export default function BibleScreen() {
     const [selectedVerse, setSelectedVerse] = useState<number | null>(null);
     const [verseCount, setVerseCount] = useState(0);
 
+    const [favoriteVerseIds, setFavoriteVerseIds] = useState<number[]>([]);
+    const [chapterComments, setChapterComments] = useState<Comment[]>([]);
+
     const { version } = useBibleVersion();
 
     const [verses, setVerses] = useState<Verse[]>([]);
     const [loading, setLoading] = useState(true);
     const [isTransitioning, setIsTransitioning] = useState(false);
+
+    const [showCommentModal, setShowCommentModal] = useState(false);
+
+    const [showReadCommentModal, setShowReadCommentModal] = useState(false);
+    const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
+
+    const [showCompleteButton, setShowCompleteButton] = useState(false);
+
+    const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+        const paddingToBottom = 20; // How close to the bottom before showing the button
+
+        const isNearBottom =
+            layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+
+        setShowCompleteButton(isNearBottom);
+    };
+
+    const handleMarkComplete = () => {
+        // Your mark as complete logic here
+        console.log("Marked as complete");
+    };
+    const handleOpenCommentModal = (comment: Comment) => {
+        setSelectedComment(comment);
+        setShowReadCommentModal(true);
+    };
+
+    const handleCloseCommentModal = () => {
+        setSelectedComment(null);
+        setShowReadCommentModal(false);
+    };
+
+    // console.log(selectedComment)
 
     useEffect(() => {
         const loadBooks = async () => {
@@ -109,7 +153,6 @@ export default function BibleScreen() {
         setShowingBookSelector(false);
     };
 
-
     const handleChapterSelect = async (chapter: number) => {
         setSelectedChapter(chapter);
         setShowChapterModal(false);
@@ -125,7 +168,8 @@ export default function BibleScreen() {
         setShowVerseModal(false);
     };
 
-    const renderBookItem = ({ item }: { item: BibleBook }) => (
+
+    const renderBookItem = ({ item }: ListRenderItemInfo<BibleBook>) => (
         <TouchableOpacity
             style={styles.bookItem}
             onPress={() => handleBookSelect(item)}
@@ -134,7 +178,6 @@ export default function BibleScreen() {
             <Text style={styles.chapterCount}>{item.chapters} chapters</Text>
         </TouchableOpacity>
     );
-
 
     useEffect(() => {
         if (selectedVerse && scrollViewRef.current) {
@@ -226,8 +269,9 @@ export default function BibleScreen() {
     const handleAddFavorite = () => {
         if (pressedVerse) {
             addFavorite(pressedVerse.id);
-            // setPressedVerse(null);
+            handleFetchFavorites();
             setShowActions(false);
+            setPressedVerse(null);
         } else {
             console.warn('No verse selected to add to favorites.');
         }
@@ -235,20 +279,45 @@ export default function BibleScreen() {
 
     const handleFetchFavorites = () => {
         const favorites = getAllFavorites();
-        console.log('Favorites:', favorites);
+        const validFavorites = favorites
+            .filter((fav) => fav.verse_id !== null)
+            .map((fav) => fav.verse_id as number);
+
+        setFavoriteVerseIds(validFavorites);
     };
 
+    useEffect(() => {
+        handleFetchFavorites();
+    }, [selectedBook, selectedChapter]);
+
+    const handleFetchCommentsForChapter = (chapterVerses: Verse[]) => {
+        const allComments = getCommentsForVerse();
+        const verseIds = chapterVerses.map(v => v.id);
+
+        const filtered = allComments.filter(comment => verseIds.includes(comment.verse_id));
+        setChapterComments(filtered);
+    };
+
+    useEffect(() => {
+        if (verses.length > 0) {
+            handleFetchCommentsForChapter(verses);
+        }
+    }, [verses]);
+
+
     const handleVersePress = (verse: Verse) => {
-        // If the same verse is pressed again, deselect it
         if (pressedVerse?.verse_number === verse.verse_number) {
             setPressedVerse(null);
             setShowActions(false);
         }
-        // Otherwise, select the new verse
         else {
             setPressedVerse(verse);
             setShowActions(true);
         }
+    };
+
+    const goToSearch = () => {
+        router.push('/(search)' as any);
     };
 
 
@@ -264,95 +333,106 @@ export default function BibleScreen() {
                     <ChevronDown size={20} color="#64748B" />
                 </TouchableOpacity>
 
-                <View style={styles.actions}>
-                    <TouchableOpacity style={styles.actionButton}>
-                        <Search size={20} color="#64748B" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={handleAddFavorite}
-                    >
-                        <Bookmark size={20} color="#64748B" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={handleFetchFavorites}
-                    >
-                        <Share2 size={20} color="#64748B" />
-                    </TouchableOpacity>
-                </View>
+                {!pressedVerse && (
+                    <View style={styles.actions}>
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={goToSearch}
+                        >
+                            <Search size={20} color="#64748B" />
+                        </TouchableOpacity>
+                        <VersionSelector />
+                    </View>
+                )}
+
+                {pressedVerse && (
+                    <View style={styles.actions}>
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => setShowCommentModal(true)}
+                        >
+                            <SquarePen size={20} color="#64748B" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={handleAddFavorite}
+                        >
+                            <Heart size={20} color="#64748B" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.actionButton}
+                            onPress={() => shareVerse(pressedVerse, () => setPressedVerse(null))}
+                        >
+                            <Share2 size={20} color="#64748B" />
+                        </TouchableOpacity>
+                    </View>
+                )}
             </View>
 
             {showingBookSelector ? (
-                <View style={styles.bookSelectorContainer}>
-                    <View style={styles.testamentTabs}>
-                        <TouchableOpacity
-                            style={[styles.testamentTab, selectedTestament === 'all' && styles.activeTestamentTab]}
-                            onPress={() => setSelectedTestament('all')}
-                        >
-                            <Text style={[styles.testamentTabText, selectedTestament === 'all' && styles.activeTestamentTabText]}>
-                                All
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.testamentTab, selectedTestament === 'old' && styles.activeTestamentTab]}
-                            onPress={() => setSelectedTestament('old')}
-                        >
-                            <Text style={[styles.testamentTabText, selectedTestament === 'old' && styles.activeTestamentTabText]}>
-                                Old Testament
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.testamentTab, selectedTestament === 'new' && styles.activeTestamentTab]}
-                            onPress={() => setSelectedTestament('new')}
-                        >
-                            <Text style={[styles.testamentTabText, selectedTestament === 'new' && styles.activeTestamentTabText]}>
-                                New Testament
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <FlatList
-                        data={filteredBooks}
-                        renderItem={renderBookItem}
-                        keyExtractor={item => item.id}
-                        style={styles.booksList}
-                        contentContainerStyle={styles.booksListContent}
-                        showsVerticalScrollIndicator={false}
-                    />
-                </View>
+                <BookSelector
+                    selectedTestament={selectedTestament}
+                    setSelectedTestament={setSelectedTestament}
+                    filteredBooks={filteredBooks}
+                    renderBookItem={renderBookItem}
+                />
             ) : (
-                <ScrollView
-                    ref={scrollViewRef}
-                    style={styles.scriptureContainer}
-                    showsVerticalScrollIndicator={false}
-                >
-                    <View style={styles.verseContainer}>
-                        <View style={styles.chapterHeader}>
-                            <Text style={styles.chapterTitle}>
-                                {selectedBook.name} {selectedChapter}
-                            </Text>
+                <>
+                    <ScrollView
+                        ref={scrollViewRef}
+                        style={styles.scriptureContainer}
+                        showsVerticalScrollIndicator={false}
 
-                            <VersionSelector />
-                            {/* <Text style={{ color: "#0284c7" }}>KJV</Text> */}
-                            {/* <BookOpen size={18} color="#0284c7" /> */}
+                        onScroll={handleScroll}
+                        scrollEventThrottle={16}
+                    >
+                        <View style={styles.verseContainer}>
+                            <View style={styles.chapterHeader}>
+                                <Text style={styles.chapterTitle}>
+                                    {selectedBook.name} {selectedChapter}
+                                </Text>
+
+                                <BookOpen size={18} color="#0284c7" />
+                            </View>
+
+                            {verses.map((verse) => {
+                                const verseComments = chapterComments.filter((c) => c.verse_id === verse.id);
+                                return (
+                                    <TouchableOpacity
+                                        key={verse.verse_number}
+                                        onPress={() => handleVersePress(verse)}
+                                        style={[
+                                            styles.verse,
+                                            favoriteVerseIds.includes(verse.id) && styles.favoriteVerse,
+                                            pressedVerse?.verse_number === verse.verse_number && styles.selectedVerse,
+                                        ]}
+                                    >
+                                        <Text style={styles.verseNumber}>{verse.verse_number}</Text>
+                                        <Text style={styles.verseText}>{verse.text}</Text>
+
+                                        {verseComments.length > 0 && (
+                                            <TouchableOpacity
+                                                onPress={() => handleOpenCommentModal(verseComments[0])}
+                                                style={{ marginLeft: 6 }}
+                                            >
+                                                <Text style={{ fontSize: 16 }}>💬</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
-
-                        {verses.map((verse) => (
-                            <TouchableOpacity
-                                key={verse.verse_number}
-                                onPress={() => handleVersePress(verse)}
-                                style={[
-                                    styles.verse,
-                                    pressedVerse?.verse_number === verse.verse_number && styles.selectedVerse
-                                ]}
-                            >
-                                <Text style={styles.verseNumber}>{verse.verse_number}</Text>
-                                <Text style={styles.verseText}>{verse.text}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </ScrollView>
+                    </ScrollView>
+                    {showCompleteButton && (
+                        <TouchableOpacity
+                            style={styles.completeButton}
+                            onPress={handleMarkComplete}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={styles.completeButtonText}>Mark as Complete</Text>
+                        </TouchableOpacity>
+                    )}
+                </>
             )}
 
             <ChapterSelectorModal
@@ -374,58 +454,32 @@ export default function BibleScreen() {
                 onClose={() => setShowVerseModal(false)}
             />
 
-            {!showingBookSelector && (
-                <View style={styles.navigation}>
-                    <TouchableOpacity
-                        style={[
-                            styles.navButton,
-                            (!selectedChapter ||
-                                (selectedChapter <= 1 &&
-                                    (!selectedBook || bibleBooks[0]?.id === selectedBook.id))) && styles.disabledButton
-                        ]}
-                        onPress={handlePreviousChapter}
-                        disabled={!selectedChapter ||
-                            (selectedChapter <= 1 &&
-                                (!selectedBook || bibleBooks[0]?.id === selectedBook.id)) ||
-                            isTransitioning}
-                    >
-                        {isTransitioning ? (
-                            <ActivityIndicator color="white" />
-                        ) : (
-                            <Text style={styles.navButtonText}>
-                                {selectedChapter && selectedChapter > 1 ?
-                                    "Previous Chapter" :
-                                    "Previous Book"}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
+            {showCommentModal && pressedVerse && typeof pressedVerse.id === 'number' && (
+                <CommentModal
+                    visible={showCommentModal}
+                    onClose={() => setShowCommentModal(false)}
+                    verseId={pressedVerse.id}
+                />
+            )}
 
-                    <TouchableOpacity
-                        style={[
-                            styles.navButton,
-                            (!selectedChapter ||
-                                !selectedBook ||
-                                (selectedChapter >= selectedBook.chapters &&
-                                    bibleBooks[bibleBooks.length - 1]?.id === selectedBook.id)) && styles.disabledButton
-                        ]}
-                        onPress={handleNextChapter}
-                        disabled={!selectedChapter ||
-                            !selectedBook ||
-                            (selectedChapter >= selectedBook.chapters &&
-                                bibleBooks[bibleBooks.length - 1]?.id === selectedBook.id) ||
-                            isTransitioning}
-                    >
-                        {isTransitioning ? (
-                            <ActivityIndicator color="white" />
-                        ) : (
-                            <Text style={styles.navButtonText}>
-                                {selectedChapter && selectedBook && selectedChapter < selectedBook.chapters ?
-                                    "Next Chapter" :
-                                    "Next Book"}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                </View>
+            {!showingBookSelector && (
+                <ChapterNavigation
+                    selectedBook={selectedBook}
+                    selectedChapter={selectedChapter}
+                    bibleBooks={bibleBooks}
+                    isTransitioning={isTransitioning}
+                    handlePreviousChapter={handlePreviousChapter}
+                    handleNextChapter={handleNextChapter}
+                />
+
+            )}
+
+            {showReadCommentModal && (
+                <ReadCommentModal
+                    visible={showReadCommentModal}
+                    onClose={handleCloseCommentModal}
+                    comment={selectedComment}
+                />
             )}
         </View>
     );
@@ -467,15 +521,7 @@ const styles = StyleSheet.create({
         padding: 8,
         marginLeft: 8,
     },
-    bookSelectorContainer: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
-    testamentTabs: {
-        flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: '#F1F5F9',
-    },
+
     testamentTab: {
         paddingVertical: 12,
         paddingHorizontal: 16,
@@ -489,14 +535,8 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#64748B',
     },
-    activeTestamentTabText: {
-        color: '#0284c7',
-    },
     booksList: {
         flex: 1,
-    },
-    booksListContent: {
-        padding: 16,
     },
     bookItem: {
         flexDirection: 'row',
@@ -568,6 +608,12 @@ const styles = StyleSheet.create({
         padding: 10,
         borderRadius: 12
     },
+    favoriteVerse: {
+        backgroundColor: '#fff7ed',
+        padding: 10,
+        borderRadius: 12
+    },
+
     navigation: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -583,30 +629,39 @@ const styles = StyleSheet.create({
         backgroundColor: '#F1F5F9',
         borderRadius: 8,
     },
-    disabledButton: {
-        backgroundColor: '#cbd5e1',
+
+    commentContainer: {
+        marginTop: 4,
+        paddingLeft: 10,
+        borderLeftWidth: 2,
+        borderLeftColor: '#38bdf8', // light blue
     },
-    navButtonText: {
-        fontFamily: 'Inter-Medium',
-        fontSize: 14,
-        color: '#0284c7',
+    commentText: {
+        fontStyle: 'italic',
+        fontSize: 13,
+        color: '#1e3a8a',
+    },
+    commentDate: {
+        fontSize: 11,
+        color: '#64748b',
     },
 
-    chapterSelectorContainer: {
-        padding: 10,
-        backgroundColor: '#f0f0f0',
+    completeButton: {
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        backgroundColor: '#0284c7',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 24,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
     },
-
-    chapterButton: {
-        marginRight: 10,
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        backgroundColor: '#1E3A8A',
-        borderRadius: 5,
-    },
-
-    chapterButtonText: {
-        color: '#fff',
+    completeButtonText: {
+        color: 'white',
         fontWeight: 'bold',
         fontSize: 16,
     },

@@ -26,25 +26,20 @@ type Prayer = {
   isAnswered: boolean;
 };
 
-type Category = {
-  id: string;
-  name: string;
-};
-
 
 export default function PrayerScreen() {
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [isAddingPrayer, setIsAddingPrayer] = useState(false);
   const [newPrayer, setNewPrayer] = useState({ title: '', description: '', category: 'requests' });
   const [prayers, setPrayers] = React.useState<Prayer[]>([]);
 
-  const { categories, isLoading } = usePrayer();
+  const { categories, defaultPrayers, fetchPrayersByCategory, isLoading } = usePrayer();
 
   useEffect(() => {
-    const loadPrayers = () => {
+    const loadPrayers = async () => {
       try {
         const dbPrayers = getAllPrayers();
         setPrayers(dbPrayers);
+        await fetchPrayersByCategory('Advancement');
       } catch (err) {
         console.error('Failed to load prayers:', err);
       }
@@ -66,10 +61,7 @@ export default function PrayerScreen() {
     ));
   };
 
-  const handleDelete = (id: string) => {
-    setPrayers(prev => prev.filter(prayer => prayer.id !== id));
-  };
-
+  console.log(defaultPrayers)
 
   return (
     <KeyboardAvoidingView
@@ -85,6 +77,9 @@ export default function PrayerScreen() {
         <PrayerCategories
           categories={categories}
           isLoading={isLoading}
+          onSelectCategory={async (categoryTitle: string) => {
+            await fetchPrayersByCategory(categoryTitle);
+          }}
         />
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Personal Declarations & Requests</Text>
@@ -95,8 +90,14 @@ export default function PrayerScreen() {
             setNewPrayer={setNewPrayer}
             setIsAddingPrayer={setIsAddingPrayer}
             PRAYER_CATEGORIES={PRAYER_CATEGORIES}
-            onSavePrayer={() => {
+            onSavePrayer={async () => {
               setIsAddingPrayer(false);
+              try {
+                const updatedPrayers = getAllPrayers();
+                setPrayers(updatedPrayers);
+              } catch (err) {
+                console.error('Error fetching prayers after save:', err);
+              }
             }}
           />
         ) : (
@@ -106,7 +107,7 @@ export default function PrayerScreen() {
               PRAYER_CATEGORIES={PRAYER_CATEGORIES}
               onToggleFavorite={handleToggleFavorite}
               onToggleAnswered={handleToggleAnswered}
-              onDelete={handleDelete}
+              setPrayers={setPrayers}
             />
           </>
         )}
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 24,
     right: 24,
-    backgroundColor: '#1E3A8A',
+    backgroundColor: '#0284c7',
     width: 56,
     height: 56,
     borderRadius: 28,

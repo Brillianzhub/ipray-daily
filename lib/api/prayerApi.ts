@@ -5,7 +5,7 @@ import { Category, PrayerPoint } from './types'
 export const usePrayer = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [featuredcategory, setFeaturedcategory] = useState<Category[]>([]);
-    const [prayers, setPrayers] = useState<PrayerPoint[]>([]);
+    const [defaultPrayers, setDefaultPrayers] = useState<PrayerPoint[]>([]);
     const [fetchedPrayers, setFetchedPrayers] = useState<PrayerPoint[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -43,7 +43,7 @@ export const usePrayer = () => {
         try {
             const fetchedPrayers = await getPrayersByCategory(category);
             const reversedPrayers = fetchedPrayers.reverse();
-            setPrayers(reversedPrayers);
+            setDefaultPrayers(reversedPrayers);
         } catch (error) {
             setError('Unable to fetch prayers. Please try again later.');
         } finally {
@@ -63,8 +63,8 @@ export const usePrayer = () => {
     return {
         categories,
         isLoading,
-        prayers,
-        setPrayers,
+        defaultPrayers,
+        setDefaultPrayers,
         selectedCategory,
         setSelectedCategory,
         fetchPrayersByCategory,
