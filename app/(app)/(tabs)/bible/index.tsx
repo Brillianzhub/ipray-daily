@@ -4,7 +4,7 @@ import { Book, ChevronDown, BookOpen, Heart, Search, Share2, SquarePen } from 'l
 import ChapterSelectorModal from '@/components/bible/ChapterSelectorModal';
 import VerseSelectorModal from '@/components/bible/VerseSelectorModal';
 import { getBibleBooks, Verse, getChapter, BibleVersion } from '@/lib/database';
-import { addFavorite, getAllFavorites, getCommentsForVerse, Comment } from '@/lib/user_db';
+import { addFavorite, getAllFavorites, getCommentsForVerse, Comment, markChapterAsRead, isChapterRead, getAllReadChapters } from '@/lib/user_db';
 import { VersionSelector } from '@/components/bible/VersionSelector';
 import { useBibleVersion } from '@/context/BibleVersionContext';
 import { useLocalSearchParams } from 'expo-router';
@@ -74,22 +74,25 @@ export default function BibleScreen() {
     const [showReadCommentModal, setShowReadCommentModal] = useState(false);
     const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
 
-    const [showCompleteButton, setShowCompleteButton] = useState(false);
+    const [hasReachedBottom, setHasReachedBottom] = useState(false);
+    const [isChapterCompleted, setIsChapterCompleted] = useState(false);
 
     const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
         const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-        const paddingToBottom = 20; // How close to the bottom before showing the button
 
-        const isNearBottom =
-            layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+        const threshold = 10;
 
-        setShowCompleteButton(isNearBottom);
+        const isAtBottom =
+            contentOffset.y + layoutMeasurement.height >= contentSize.height - threshold;
+
+        setHasReachedBottom(isAtBottom);
     };
 
-    const handleMarkComplete = () => {
-        // Your mark as complete logic here
-        console.log("Marked as complete");
-    };
+    useEffect(() => {
+        setHasReachedBottom(false);
+        scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    }, [selectedChapter]);
+
     const handleOpenCommentModal = (comment: Comment) => {
         setSelectedComment(comment);
         setShowReadCommentModal(true);
@@ -99,8 +102,6 @@ export default function BibleScreen() {
         setSelectedComment(null);
         setShowReadCommentModal(false);
     };
-
-    // console.log(selectedComment)
 
     useEffect(() => {
         const loadBooks = async () => {
@@ -140,6 +141,15 @@ export default function BibleScreen() {
             }
         }
     }, [reference, bibleBooks]);
+
+    useEffect(() => {
+        const checkReadStatus = async () => {
+            if (selectedBook?.name && selectedChapter) {
+                setIsChapterCompleted(isChapterRead(selectedBook.name, selectedChapter));
+            }
+        };
+        checkReadStatus();
+    }, [selectedBook?.name, selectedChapter]);
 
 
     const filteredBooks = selectedTestament === 'all'
@@ -211,6 +221,13 @@ export default function BibleScreen() {
         }
     }, [selectedBook, selectedChapter, version]);
 
+    const handleMarkComplete = () => {
+        if (!selectedBook || !selectedChapter) return;
+
+        markChapterAsRead(selectedBook.name, selectedChapter);
+        setIsChapterCompleted(true); // Update state immediately
+        fetchVerses(selectedBook.name, selectedChapter, version); // Keep your refresh logic
+    };
 
     const handlePreviousChapter = async () => {
         if (!selectedBook || !selectedChapter || isTransitioning) return;
@@ -382,7 +399,7 @@ export default function BibleScreen() {
                         ref={scrollViewRef}
                         style={styles.scriptureContainer}
                         showsVerticalScrollIndicator={false}
-
+                        contentContainerStyle={{ flexGrow: 1 }}
                         onScroll={handleScroll}
                         scrollEventThrottle={16}
                     >
@@ -423,18 +440,8 @@ export default function BibleScreen() {
                             })}
                         </View>
                     </ScrollView>
-                    {showCompleteButton && (
-                        <TouchableOpacity
-                            style={styles.completeButton}
-                            onPress={handleMarkComplete}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.completeButtonText}>Mark as Complete</Text>
-                        </TouchableOpacity>
-                    )}
                 </>
             )}
-
             <ChapterSelectorModal
                 visible={showChapterModal}
                 bookName={selectedBook.name}
@@ -470,10 +477,13 @@ export default function BibleScreen() {
                     isTransitioning={isTransitioning}
                     handlePreviousChapter={handlePreviousChapter}
                     handleNextChapter={handleNextChapter}
+
+                    hasReachedBottom={hasReachedBottom}
+                    handleMarkComplete={handleMarkComplete}
+                    isChapterCompleted={isChapterCompleted}
                 />
 
             )}
-
             {showReadCommentModal && (
                 <ReadCommentModal
                     visible={showReadCommentModal}
@@ -560,6 +570,7 @@ const styles = StyleSheet.create({
     scriptureContainer: {
         flex: 1,
         padding: 16,
+        position: 'relative'
     },
     verseContainer: {
         backgroundColor: '#FFFFFF',
@@ -644,25 +655,5 @@ const styles = StyleSheet.create({
     commentDate: {
         fontSize: 11,
         color: '#64748b',
-    },
-
-    completeButton: {
-        position: 'absolute',
-        bottom: 20,
-        right: 20,
-        backgroundColor: '#0284c7',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderRadius: 24,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-    },
-    completeButtonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
-    },
+    }
 });

@@ -1,7 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 const userDb = SQLite.openDatabaseSync('user_data.db');
 
-// types.ts (or at the top of your file)
 export interface Favorite {
     id: number;
     verse_id: number;
@@ -29,7 +28,6 @@ export function addFavorite(verseId: number): void {
             'INSERT INTO favorites (verse_id) VALUES (?)',
             [verseId]
         );
-        // console.log('Favorite added successfully!');
     } catch (err) {
         console.error('Error adding favorite:', err);
     }
@@ -41,7 +39,6 @@ export function addComment(verseId: number, commentText: string): void {
             'INSERT INTO comments (verse_id, comment) VALUES (?, ?)',
             [verseId, commentText]
         );
-        console.log('Comment added successfully!');
     } catch (err) {
         console.error('Error adding comment:', err);
     }
@@ -74,7 +71,6 @@ export function updateComment(commentId: number, newText: string): void {
             'UPDATE comments SET comment = ? WHERE id = ?',
             [newText, commentId]
         );
-        // console.log('Comment updated successfully!');
     } catch (err) {
         console.error('Error updating comment:', err);
     }
@@ -90,3 +86,67 @@ export function removeFavorite(id: number): void {
         console.error('Error removing favorite:', err);
     }
 }
+
+export function markChapterAsRead(bookName: string, chapterNumber: number): void {
+    try {
+        // First check if this chapter is already marked as read
+        const existing = userDb.getAllSync<ReadChapter>(
+            'SELECT * FROM read_chapters WHERE book_name = ? AND chapter_number = ?',
+            [bookName, chapterNumber]
+        );
+
+        if (existing.length === 0) {
+            userDb.runSync(
+                'INSERT INTO read_chapters (book_name, chapter_number) VALUES (?, ?)',
+                [bookName, chapterNumber]
+            );
+        }
+    } catch (err) {
+        console.error('Error marking chapter as read:', err);
+    }
+}
+
+export function getAllReadChapters(): ReadChapter[] {
+    try {
+        const results = userDb.getAllSync<ReadChapter>(
+            'SELECT * FROM read_chapters ORDER BY read_at DESC'
+        );
+        return results;
+    } catch (err) {
+        console.error('Error fetching read chapters:', err);
+        return [];
+    }
+}
+
+export function getReadChaptersByBook(bookName: string): ReadChapter[] {
+    try {
+        const results = userDb.getAllSync<ReadChapter>(
+            'SELECT * FROM read_chapters WHERE book_name = ? ORDER BY chapter_number',
+            [bookName]
+        );
+        return results;
+    } catch (err) {
+        console.error('Error fetching read chapters by book:', err);
+        return [];
+    }
+}
+
+export function isChapterRead(bookName: string, chapterNumber: number): boolean {
+    try {
+        const results = userDb.getAllSync<ReadChapter>(
+            'SELECT * FROM read_chapters WHERE book_name = ? AND chapter_number = ?',
+            [bookName, chapterNumber]
+        );
+        return results.length > 0;
+    } catch (err) {
+        console.error('Error checking if chapter is read:', err);
+        return false;
+    }
+}
+
+// Add this to your database functions:
+// export function getBookCompletion(bookName: string) {
+//     const totalChapters = bibleBooks.find(b => b.name === bookName)?.chapters || 0;
+//     const readChapters = getReadChaptersByBook(bookName).length;
+//     return totalChapters > 0 ? Math.round((readChapters / totalChapters) * 100) : 0;
+// }

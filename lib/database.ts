@@ -33,21 +33,22 @@ const versionToAsset = {
 } as const;
 
 
+
 export async function openDatabase(version: BibleVersion): Promise<SQLite.SQLiteDatabase> {
     const sqliteDir = `${FileSystem.documentDirectory}SQLite`;
     const dbFileName = versionToDbName[version];
     const dbPath = `${sqliteDir}/${dbFileName}`;
 
-    // Make sure the SQLite directory exists
-    const sqliteDirInfo = await FileSystem.getInfoAsync(sqliteDir);
-    if (!sqliteDirInfo.exists) {
+    // Make sure the SQLite directory exists (async)
+    const dirInfo = await FileSystem.getInfoAsync(sqliteDir);
+    if (!dirInfo.exists) {
         await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
     }
 
-    // Helper: Check if DB file is valid
+    // Helper to check if DB is valid (async)
     const isDbValid = async (path: string) => {
         const info = await FileSystem.getInfoAsync(path);
-        return info.exists && info.size > 1024;
+        return info.exists && info.size > 1024; // greater than 1KB
     };
 
     if (!(await isDbValid(dbPath))) {
@@ -56,29 +57,33 @@ export async function openDatabase(version: BibleVersion): Promise<SQLite.SQLite
             await asset.downloadAsync();
 
             if (!asset.localUri) {
-                throw new Error(`Invalid local URI for asset`);
+                throw new Error('Asset download failed - no local URI');
             }
 
             await FileSystem.copyAsync({
                 from: asset.localUri,
-                to: dbPath,
+                to: dbPath
             });
 
-            // Verify copy
+            // Verify the copy was successful
             if (!(await isDbValid(dbPath))) {
-                throw new Error('Database copy failed');
+                throw new Error('Database copy verification failed');
             }
         } catch (error) {
-            console.error('Database initialization failed:', error);
-            throw new Error(`Could not initialize ${version} database`);
+            console.error('Database initialization error:', error);
+            throw new Error(`Could not initialize ${version} database: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
 
-    console.log(`Opening database at: ${dbPath}`);
-    return SQLite.openDatabaseSync(
-        Platform.OS === 'android' ? dbPath : dbFileName
-    );
+    // Android requires special path handling
+    const finalPath = Platform.OS === 'android'
+        ? dbPath.replace(/^file:\/\//, '')
+        : dbFileName;
+
+    return SQLite.openDatabaseSync(finalPath);
 }
+
+
 
 // export async function openDatabase(version: BibleVersion): Promise<SQLite.SQLiteDatabase> {
 //     const sqliteDir = `${FileSystem.documentDirectory}SQLite`;

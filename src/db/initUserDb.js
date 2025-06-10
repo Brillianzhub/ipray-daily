@@ -12,7 +12,6 @@ export async function initUserDb() {
       await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
     }
 
-    // Initialize favorites table
     userDb.execSync(`
       CREATE TABLE IF NOT EXISTS favorites (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +41,6 @@ export async function initUserDb() {
       );
     `);
 
-    // console.log('User data tables initialized.');
   } catch (err) {
     console.error('Error initializing user database:', err);
   }

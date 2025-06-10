@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Modal, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, AppState, AppStateStatus, TouchableOpacity, Modal, TextInput, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BookOpen, MessageCircle, Plus, X, Music } from 'lucide-react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-
 import DailyPrayerCard from '@/components/home/DailyPrayerCard';
 import FeaturedContent from '@/components/home/FeaturedContent';
 import { useAppTheme } from '@/hooks/useAppTheme';
@@ -32,10 +31,30 @@ export default function HomeScreen() {
   const { devotion, fetchDevotionByDate, isLoading, error } = useDevotion();
   const { stats, loading } = useStats();
 
+  // useEffect(() => {
+  //   const today = new Date().toISOString().split('T')[0];
+  //   fetchDevotionByDate(today);
+  // }, []);
+
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
+
+    // Fetch immediately
     fetchDevotionByDate(today);
-  }, []);
+
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        const newToday = new Date().toISOString().split('T')[0];
+        fetchDevotionByDate(newToday);
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      subscription.remove();
+    };
+  }, [fetchDevotionByDate]);
 
   const handleReadMore = () => {
     router.replace({
