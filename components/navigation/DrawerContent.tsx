@@ -12,7 +12,6 @@ import { usePathname, useRouter } from 'expo-router';
 import { Book, Calendar, Heart, Home, Info, Mail, Moon, Music, HandHelping as PrayingHands, Settings, Sun } from 'lucide-react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppTheme } from '@/hooks/useAppTheme';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 
 const menuItems = [
@@ -52,7 +51,9 @@ export default function DrawerContent(props: any) {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
+      borderRadius: 50,
       backgroundColor: colors.background,
+      
     },
     header: {
       padding: 16,

@@ -22,9 +22,9 @@ const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, isLoadi
 
     const visibleCategories = showAll ? categories : categories.slice(0, 9);
 
-    if (isLoading) {
-        return <ActivityIndicator size="large" color="#6B4E71" style={styles.loader} />;
-    }
+    // if (isLoading) {
+    //     return <ActivityIndicator size="large" color="#6B4E71" style={styles.loader} />;
+    // }
 
     return (
         <View style={styles.categoriesContainer}>

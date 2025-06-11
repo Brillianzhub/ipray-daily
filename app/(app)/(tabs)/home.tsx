@@ -56,6 +56,7 @@ export default function HomeScreen() {
     };
   }, [fetchDevotionByDate]);
 
+  
   const handleReadMore = () => {
     router.replace({
       pathname: '/Devotion'

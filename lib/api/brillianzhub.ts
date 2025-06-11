@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { PrayerPoint } from './types'
 
 interface Category {
     id: number,
@@ -7,15 +8,6 @@ interface Category {
     image: string | null;
 }
 
-interface PrayerPoint {
-    id: number;
-    title: string;
-    content: string;
-    category: {
-        id: number,
-        title: string;
-    };
-}
 
 interface Devotion {
     date: string;
@@ -104,15 +96,16 @@ export const getFeaturedCategories = async (): Promise<Category[]> => {
 
 export const getPrayersByCategory = async (category: string): Promise<PrayerPoint[]> => {
     try {
-        const response = await axios.get<PrayerPoint[]>(`https://www.brillianzhub.com/ipray/prayerpoints/by_category/?category=${category}`);
+        const response = await axios.get<PrayerPoint[]>(
+            `https://www.brillianzhub.com/ipray/prayerpoints/by_category/?category=${category}`
+        );
 
-        if (response.statusText !== 'OK') {
+        if (response.status !== 200) {
             throw new Error('Error fetching prayers: ' + response.statusText);
         }
 
         const data = response.data;
-        const prayers = data.filter((prayer) => prayer.category.title === category);
-        return prayers;
+        return data; // already filtered from backend
     } catch (error) {
         throw new Error('Error fetching categories: ' + (error as Error).message);
     }

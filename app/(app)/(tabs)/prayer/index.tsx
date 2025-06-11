@@ -1,12 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, KeyboardAvoidingView } from 'react-native';
 import { Plus } from 'lucide-react-native';
-import { usePrayer } from '@/lib/api/prayerApi';
+
 import PrayerCategories from '@/components/prayers/PrayerCategories';
 import PrayerForm from '@/components/prayers/AddPrayers';
 import PrayerList from '@/components/prayers/PersonalPrayers';
 import { getAllPrayers } from '@/lib/user_prayers';
-
+import { usePrayer } from '@/lib/api/prayerApi';
+import { useRouter } from 'expo-router';
 
 const PRAYER_CATEGORIES = [
   { id: 'all', name: 'All Prayers' },
@@ -32,14 +34,14 @@ export default function PrayerScreen() {
   const [newPrayer, setNewPrayer] = useState({ title: '', description: '', category: 'requests' });
   const [prayers, setPrayers] = React.useState<Prayer[]>([]);
 
-  const { categories, defaultPrayers, fetchPrayersByCategory, isLoading } = usePrayer();
+  const { categories, fetchPrayersByCategory, defaultPrayers, isLoading } = usePrayer();
+  const router = useRouter();
 
   useEffect(() => {
     const loadPrayers = async () => {
       try {
         const dbPrayers = getAllPrayers();
         setPrayers(dbPrayers);
-        await fetchPrayersByCategory('Advancement');
       } catch (err) {
         console.error('Failed to load prayers:', err);
       }
@@ -61,7 +63,6 @@ export default function PrayerScreen() {
     ));
   };
 
-  console.log(defaultPrayers)
 
   return (
     <KeyboardAvoidingView
@@ -77,8 +78,11 @@ export default function PrayerScreen() {
         <PrayerCategories
           categories={categories}
           isLoading={isLoading}
-          onSelectCategory={async (categoryTitle: string) => {
-            await fetchPrayersByCategory(categoryTitle);
+          onSelectCategory={(categoryTitle: string) => {
+            router.push({
+              pathname: '/prayer/prayers',
+              params: { title: categoryTitle }
+            });
           }}
         />
         <View style={styles.sectionContainer}>

@@ -41,7 +41,7 @@ export const usePrayer = () => {
         setIsLoading(true);
         setError(null);
         try {
-            const fetchedPrayers = await getPrayersByCategory(category);
+            const fetchedPrayers: PrayerPoint[] = await getPrayersByCategory(category);
             const reversedPrayers = fetchedPrayers.reverse();
             setDefaultPrayers(reversedPrayers);
         } catch (error) {
@@ -50,6 +50,7 @@ export const usePrayer = () => {
             setIsLoading(false);
         }
     };
+
 
 
     useEffect(() => {
