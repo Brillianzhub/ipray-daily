@@ -53,6 +53,33 @@ export default function HymnDetail() {
         );
     }
 
+
+    const renderChorus = (shouldRender: boolean) => {  // Add shouldRender parameter
+        if (!shouldRender || !hymn?.has_chorus) return null;
+
+        if (typeof hymn?.chorus !== 'string') {
+            return (
+                <View style={styles.chorusContainer}>
+                    <Text>[Invalid chorus data]</Text>
+                </View>
+            );
+        }
+
+        return (
+            <View style={styles.chorusContainer}>
+                <Text style={styles.chorusLabel}>Chorus:</Text>
+                <View style={styles.chorus}>
+                    {hymn.chorus.split('\n').map((line, idx) => (
+                        <Text key={`chorus-${idx}`} style={styles.chorusLine}>
+                            {line || '\u00A0'}
+                        </Text>
+                    ))}
+                </View>
+            </View>
+        );
+    };
+
+
     return (
         <Animated.View
             style={styles.container}
@@ -65,38 +92,30 @@ export default function HymnDetail() {
                     showsVerticalScrollIndicator={false}
                     nestedScrollEnabled={true}
                 >
-                    <Text style={styles.title}>{hymn.title}</Text>
+                    {hymn.title && <Text style={styles.title}>{hymn.title}</Text>}
 
                     <Text style={styles.author}>
                         {[hymn.author, hymn.year].filter(Boolean).join(', ')}
                     </Text>
 
-                    {hymn.stanzas.map((stanza, stanzaIndex) => (
+                    {hymn.stanzas?.map((stanza, stanzaIndex) => (
                         <View key={stanzaIndex} style={styles.stanzaContainer}>
                             <Text style={styles.stanzaNumber}>
-                                {stanza.stanza_number}.
+                                {stanza.stanza_number || stanzaIndex + 1}.
                             </Text>
 
                             <View style={styles.stanza}>
-                                {stanza.text.split('\n').map((line: string, lineIndex: number) => (
-                                    <Text key={lineIndex} style={styles.lyricLine}>
-                                        {line || '\u00A0'}
-                                    </Text>
-                                ))}
+                                {typeof stanza.text === 'string' &&
+                                    stanza.text.split('\n').map((line: string, lineIndex: number) => (
+                                        <Text key={`${stanzaIndex}-${lineIndex}`} style={styles.lyricLine}>
+                                            {line || '\u00A0'}
+                                        </Text>
+                                    ))
+                                }
                             </View>
 
-                            {hymn.has_chorus && stanzaIndex === 0 && hymn.chorus && (
-                                <View style={styles.chorusContainer}>
-                                    <Text style={styles.chorusLabel}>Chorus:</Text>
-                                    <View style={styles.chorus}>
-                                        {hymn.chorus.split('\n').map((line: string, lineIndex: number) => (
-                                            <Text key={lineIndex} style={styles.chorusLine}>
-                                                {line || '\u00A0'}
-                                            </Text>
-                                        ))}
-                                    </View>
-                                </View>
-                            )}
+                            {stanzaIndex === 0 && renderChorus(true)}
+
                         </View>
                     ))}
 
@@ -202,6 +221,9 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         textAlign: 'center',
         marginBottom: 2,
+
+        includeFontPadding: false,
+        textAlignVertical: 'center',
     },
 
     stanza: {
