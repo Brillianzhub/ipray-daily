@@ -11,13 +11,17 @@ import {
     Image,
     ListRenderItem,
 } from 'react-native';
+import { DatabaseService, Prayer } from '@/lib/prayers';
+import { parseScriptureReference, getVersesRange } from '@/lib/database';
+
 import React, {
     useLayoutEffect,
     useEffect,
     useState,
     useRef,
 } from 'react';
-import { usePrayer } from '@/lib/api/prayerApi';
+import PrayerCard from '@/components/prayers/PrayerCards';
+
 import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
@@ -26,40 +30,47 @@ const CARD_WIDTH = width * 0.8;
 const CARD_MARGIN = 10;
 const SPACER_WIDTH = (width - CARD_WIDTH) / 2 - CARD_MARGIN;
 
-const SWIPE_LEFT_ICON = require('../../../../assets/images/swipe-left.gif');
-const SWIPE_RIGHT_ICON = require('../../../../assets/images/swipe-left.gif');
 
-interface Prayer {
-    id: number;
-    text: string;
-    prayer_long?: string;
-    bible_verse: string;
-    bible_quotation: string;
-}
 
 const Prayers = () => {
-    const { title } = useLocalSearchParams<{ title?: string }>();
-    // const navigation = useNavigation();
-    const { isLoading, defaultPrayers, fetchPrayersByCategory } = usePrayer();
-
+    const { category } = useLocalSearchParams<{ category?: string }>();
+    const [prayers, setPrayers] = useState<Prayer[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [refreshing, setRefreshing] = useState(false);
     const scrollX = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        if (title) {
-            fetchPrayersByCategory(title);
+
+    const fetchPrayers = async () => {
+        try {
+            if (!refreshing) setIsLoading(true);
+            const fetchedPrayers = await DatabaseService.fetchPrayersByCategory(category as string);
+            setPrayers(fetchedPrayers || []);
+        } catch (error) {
+            console.error('Error fetching prayers:', error);
+        } finally {
+            setIsLoading(false);
+            setRefreshing(false);
         }
-    }, [title]);
+    };
+
+    useEffect(() => {
+        if (typeof category === 'string') {
+            fetchPrayers();
+        }
+    }, [category]);
+
+
 
     const onRefresh = async () => {
         setRefreshing(true);
-        if (title) {
-            await fetchPrayersByCategory(title);
+        if (category) {
+            await DatabaseService.fetchPrayersByCategory(category);
         }
         setRefreshing(false);
     };
 
     const renderItem: ListRenderItem<Prayer> = ({ item, index }) => {
+
         const inputRange = [
             (index - 1) * (CARD_WIDTH + CARD_MARGIN * 2),
             index * (CARD_WIDTH + CARD_MARGIN * 2),
@@ -78,26 +89,7 @@ const Prayers = () => {
             extrapolate: 'clamp',
         });
 
-        return (
-            <Animated.View style={[styles.prayerCard, { transform: [{ scale }], opacity }]}>
-                <ScrollView
-                    contentContainerStyle={styles.scrollViewContent}
-                    showsVerticalScrollIndicator={false}
-                    nestedScrollEnabled
-                >
-                    <View style={styles.bibleVerseContainer}>
-                        <Text style={styles.bibleVerseText}>
-                            {item.bible_verse} -{' '}
-                            <Text style={{ color: '#F59E0B' }}>{item.bible_quotation}</Text>
-                        </Text>
-                    </View>
-                    <Text style={styles.prayerText}>{item.text}</Text>
-                    {item.prayer_long && (
-                        <Text style={styles.prayerLongText}>{item.prayer_long}</Text>
-                    )}
-                </ScrollView>
-            </Animated.View>
-        );
+        return <PrayerCard item={item} scale={scale} opacity={opacity} />;
     };
 
     if (isLoading && !refreshing) {
@@ -114,9 +106,9 @@ const Prayers = () => {
                 <ArrowLeft size={24} color="#F59E0B" />
             </View>
             <Animated.FlatList
-                data={defaultPrayers}
+                data={prayers}
                 renderItem={renderItem}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={(item) => item.prayer_number.toString()}
                 horizontal
                 pagingEnabled
                 snapToInterval={CARD_WIDTH + CARD_MARGIN * 2}
@@ -177,31 +169,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
     },
-    bibleVerseContainer: {},
-    bibleVerseText: {
-        fontFamily: 'Inter-Regular',
-        fontSize: 18,
-        color: '#4B5563',
-        fontStyle: 'italic',
-        textAlign: 'justify',
-    },
-    prayerText: {
-        fontFamily: 'Inter-Regular',
-        fontSize: 18,
-        color: '#4B5563',
-        lineHeight: 28,
-        marginTop: 16,
-        textAlign: 'justify',
-    },
-    prayerLongText: {
-        marginTop: 12,
-        fontFamily: 'Inter-Regular',
-        fontSize: 16,
-        color: '#6B7280',
-        fontStyle: 'italic',
-        lineHeight: 24,
-        textAlign: 'center',
-    },
+
     noPrayersText: {
         fontFamily: 'Inter-Regular',
         fontSize: 16,
@@ -236,3 +204,41 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
 });
+
+
+// import { StyleSheet, Text, View } from 'react-native';
+// import React, { useState, useEffect } from 'react';
+// import { useLocalSearchParams, useNavigation } from 'expo-router';
+
+// type Params = {
+//     category?: string;
+// };
+
+// const prayers = () => {
+
+//     const { category } = useLocalSearchParams<{ category?: string }>();
+//     const [prayers, setPrayers] = useState<Prayer[]>([]);
+
+//     useEffect(() => {
+//         if (typeof category === 'string') {
+//             const fetchPrayers = async () => {
+//                 const fetchedPrayers = await DatabaseService.fetchPrayersByCategory(category);
+//                 setPrayers(fetchedPrayers || []);
+//             };
+//             fetchPrayers();
+//         }
+//     }, [category]);
+
+
+//     console.log(prayers)
+
+//     return (
+//         <View>
+//             <Text>prayers</Text>
+//         </View>
+//     )
+// }
+
+// export default prayers
+
+// const styles = StyleSheet.create({})

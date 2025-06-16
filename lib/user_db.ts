@@ -44,6 +44,40 @@ export function addComment(verseId: number, commentText: string): void {
     }
 }
 
+export function addFavoriteHymn(hymnId: number): void {
+    try {
+        userDb.runSync(
+            'INSERT INTO favorite_hymns (hymn_id) VALUES (?)',
+            [hymnId]
+        );
+    } catch (err) {
+        console.error('Error adding favorite hymn:', err);
+    }
+}
+
+export function removeFavoriteHymn(hymnId: number): void {
+    try {
+        userDb.runSync(
+            'DELETE FROM favorite_hymns WHERE hymn_id = ?',
+            [hymnId]
+        );
+    } catch (err) {
+        console.error('Error removing favorite hymn:', err);
+    }
+}
+
+export function getFavoriteHymnIds(): number[] {
+    try {
+        const results = userDb.getAllSync<{ hymn_id: number }>(
+            'SELECT hymn_id FROM favorite_hymns'
+        );
+        return results.map(row => row.hymn_id);
+    } catch (err) {
+        console.error('Error getting favorite hymn IDs:', err);
+        return [];
+    }
+}
+
 export function getAllFavorites(): Favorite[] {
     try {
         const results = userDb.getAllSync<Favorite>('SELECT * FROM favorites');
@@ -89,7 +123,6 @@ export function removeFavorite(id: number): void {
 
 export function markChapterAsRead(bookName: string, chapterNumber: number): void {
     try {
-        // First check if this chapter is already marked as read
         const existing = userDb.getAllSync<ReadChapter>(
             'SELECT * FROM read_chapters WHERE book_name = ? AND chapter_number = ?',
             [bookName, chapterNumber]

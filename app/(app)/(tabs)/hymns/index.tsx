@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -6,45 +6,67 @@ import {
     FlatList,
     TouchableOpacity,
     TextInput,
-    ActivityIndicator,
     RefreshControl
 } from 'react-native';
 import { Search, Star } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { useHymns } from '@/lib/api/hymnsApi';
+import { fetchHymns, BasicHymn, toggleFavoriteHymn, getAllFavoriteHymnIds } from '@/lib/hymns';
 
 export default function HymnsScreen() {
     const [searchQuery, setSearchQuery] = useState('');
     const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+
+    const [hymns, setHymns] = useState<BasicHymn[]>([]);
     const router = useRouter();
 
-    const { hymns, isLoading, error, fetchHymns } = useHymns();
 
-    const hymnsWithFavorites = hymns?.map(hymn => ({
-        ...hymn,
-        favorite: false // You can wire this up to local storage later
-    })) || [];
+    const loadHymns = async () => {
+        try {
+            const data = await fetchHymns();
+            const favIds = getAllFavoriteHymnIds();
+            const hymnsWithFavorite = data.map(hymn => ({
+                ...hymn,
+                favorite: favIds.includes(hymn.id),
+            }));
+            setHymns(hymnsWithFavorite);
+        } catch (err) {
+            console.error('Error loading hymns:', err);
+        }
+    };
 
-    const filteredHymns = hymnsWithFavorites.filter(hymn => {
-        const matchesSearch = hymn.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    useEffect(() => {
+        loadHymns();
+    }, []);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadHymns();
+        setRefreshing(false)
+    }
+
+    const handleToggleFavorite = async (id: number) => {
+        try {
+            const hymn = hymns.find(h => h.id === id);
+            if (!hymn) return;
+
+            toggleFavoriteHymn(id, hymn.favorite);
+            await loadHymns();
+        } catch (err) {
+            console.error('Failed to toggle favorite:', err);
+        }
+    };
+
+
+    const filteredHymns = hymns.filter(hymn => {
+        const matchesSearch =
+            hymn.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (hymn.author?.toLowerCase()?.includes(searchQuery.toLowerCase()) ?? false);
         const matchesFavorite = showFavoritesOnly ? hymn.favorite : true;
         return matchesSearch && matchesFavorite;
     });
 
-    const onRefresh = async () => {
-        setRefreshing(true);
-        try {
-            await fetchHymns();
-        } catch (err) {
-            console.error('Error refreshing hymns:', err);
-        } finally {
-            setRefreshing(false);
-        }
-    };
-
-    const renderHymnItem = ({ item }: { item: typeof hymnsWithFavorites[number] }) => (
+    const renderHymnItem = ({ item }: { item: BasicHymn & { favorite: boolean } }) => (
         <TouchableOpacity
             style={styles.hymnItem}
             onPress={() => router.push({
@@ -59,11 +81,14 @@ export default function HymnsScreen() {
                 </View>
 
                 <View style={styles.hymnActions}>
-                    <TouchableOpacity style={styles.actionButton}>
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => handleToggleFavorite(item.id)}
+                    >
                         <Star
                             size={20}
-                            color={item.favorite ? '#B45309' : '#94A3B8'}
-                            fill={item.favorite ? '#B45309' : 'transparent'}
+                            color={item.favorite ? '#FBBF24' : '#94A3B8'}
+                            fill={item.favorite ? '#FBBF24' : 'transparent'}
                         />
                     </TouchableOpacity>
                 </View>
@@ -103,28 +128,22 @@ export default function HymnsScreen() {
                 <Text style={styles.resultCount}>{filteredHymns.length} hymns</Text>
             </View>
 
-            {isLoading && !refreshing ? (
-                <ActivityIndicator size="large" color="#6B7280" style={{ marginTop: 20 }} />
-            ) : error ? (
-                <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
-            ) : (
-                <FlatList
-                    data={filteredHymns}
-                    renderItem={renderHymnItem}
-                    keyExtractor={item => item.id.toString()}
-                    style={styles.hymnsList}
-                    contentContainerStyle={styles.hymnsListContent}
-                    showsVerticalScrollIndicator={false}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={['#1E3A8A']}
-                            tintColor="#1E3A8A"
-                        />
-                    }
-                />
-            )}
+            <FlatList
+                data={filteredHymns}
+                renderItem={renderHymnItem}
+                keyExtractor={item => item.id.toString()}
+                style={styles.hymnsList}
+                contentContainerStyle={styles.hymnsListContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        onRefresh={onRefresh}
+                        refreshing={refreshing}
+                        colors={['#1E3A8A']}
+                        tintColor="#1E3A8A"
+                    />
+                }
+            />
         </View>
     );
 }

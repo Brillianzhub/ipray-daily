@@ -1,17 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { GestureDetector, Gesture, Directions } from 'react-native-gesture-handler';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { useHymns } from '@/lib/api/hymnsApi';
+import { fetchHymnDetails, HymnWithStanzas } from '@/lib/hymns';
 
 
 export default function HymnDetail() {
     const { id } = useLocalSearchParams();
-    const router = useRouter();
-    const { hymns, isLoading, error } = useHymns();
+    const [hymn, setHymn] = useState<HymnWithStanzas | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    if (isLoading) {
+    useEffect(() => {
+        const loadHymn = async () => {
+            try {
+                setLoading(true);
+                const hymnId = Number(id);
+                if (isNaN(hymnId)) {
+                    throw new Error('Invalid hymn ID');
+                }
+
+                const hymnData = await fetchHymnDetails(hymnId);
+                if (!hymnData) {
+                    throw new Error('Hymn not found');
+                }
+                setHymn(hymnData);
+            } catch (err) {
+                console.error('Error loading hymn:', err);
+                setError(err instanceof Error ? err.message : 'Failed to load hymn');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadHymn();
+    }, [id]);
+
+    if (loading) {
         return (
             <View style={styles.container}>
                 <Text>Loading...</Text>
@@ -19,47 +44,6 @@ export default function HymnDetail() {
         );
     }
 
-    if (error || !hymns || hymns.length === 0) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.errorText}>Failed to load hymn.</Text>
-            </View>
-        );
-    }
-
-    const currentIndex = hymns.findIndex(hymn => hymn.id.toString() === id?.toString());
-    const hymn = hymns[currentIndex];
-
-    const hasPrevious = currentIndex > 0;
-    const hasNext = currentIndex < hymns.length - 1;
-
-    const navigateToPrevious = () => {
-        if (hasPrevious) {
-            router.replace({
-                pathname: '/hymns/[id]',
-                params: { id: hymns[currentIndex - 1].id }
-            });
-        }
-    };
-
-    const navigateToNext = () => {
-        if (hasNext) {
-            router.replace({
-                pathname: '/hymns/[id]',
-                params: { id: hymns[currentIndex + 1].id }
-            });
-        }
-    };
-
-    const swipeGesture = Gesture.Fling()
-        .direction(Directions.RIGHT | Directions.LEFT)
-        .onEnd((e: any) => {
-            if (e.direction === Directions.LEFT && hasNext) {
-                navigateToNext();
-            } else if (e.direction === Directions.RIGHT && hasPrevious) {
-                navigateToPrevious();
-            }
-        });
 
     if (!hymn) {
         return (
@@ -70,60 +54,56 @@ export default function HymnDetail() {
     }
 
     return (
-        <GestureDetector gesture={swipeGesture}>
-            <Animated.View
-                style={styles.container}
-                entering={FadeIn.duration(300)}
-            >
-                <View style={{ flex: 1 }}>
-                    <ScrollView
-                        style={styles.content}
-                        scrollEnabled={true}
-                        showsVerticalScrollIndicator={false}
-                        nestedScrollEnabled={true}
-                    >
-                        <Text style={styles.title}>{hymn.title}</Text>
-                        <Text style={styles.author}>
-                            {hymn.author}, {hymn.year}
-                        </Text>
+        <Animated.View
+            style={styles.container}
+            entering={FadeIn.duration(300)}
+        >
+            <View style={{ flex: 1 }}>
+                <ScrollView
+                    style={styles.content}
+                    scrollEnabled={true}
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled={true}
+                >
+                    <Text style={styles.title}>{hymn.title}</Text>
 
-                        {hymn.stanzas.map((stanza, stanzaIndex) => (
-                            <View key={stanzaIndex} style={styles.stanzaContainer}>
-                                {/* Stanza number */}
-                                <Text style={styles.stanzaNumber}>
-                                    {stanza.stanza_number}.
-                                </Text>
+                    <Text style={styles.author}>
+                        {[hymn.author, hymn.year].filter(Boolean).join(', ')}
+                    </Text>
 
-                                {/* Stanza content */}
-                                <View style={styles.stanza}>
-                                    {stanza.text.split('\n').map((line: string, lineIndex: number) => (
-                                        <Text key={lineIndex} style={styles.lyricLine}>
-                                            {line || '\u00A0'}
-                                        </Text>
-                                    ))}
-                                </View>
+                    {hymn.stanzas.map((stanza, stanzaIndex) => (
+                        <View key={stanzaIndex} style={styles.stanzaContainer}>
+                            <Text style={styles.stanzaNumber}>
+                                {stanza.stanza_number}.
+                            </Text>
 
-                                {/* Add chorus after first stanza if exists */}
-                                {hymn.has_chorus && stanzaIndex === 0 && hymn.chorus && (
-                                    <View style={styles.chorusContainer}>
-                                        <Text style={styles.chorusLabel}>Chorus:</Text>
-                                        <View style={styles.chorus}>
-                                            {hymn.chorus.split('\n').map((line: string, lineIndex: number) => (
-                                                <Text key={lineIndex} style={styles.chorusLine}>
-                                                    {line || '\u00A0'}
-                                                </Text>
-                                            ))}
-                                        </View>
-                                    </View>
-                                )}
+                            <View style={styles.stanza}>
+                                {stanza.text.split('\n').map((line: string, lineIndex: number) => (
+                                    <Text key={lineIndex} style={styles.lyricLine}>
+                                        {line || '\u00A0'}
+                                    </Text>
+                                ))}
                             </View>
-                        ))}
 
-                    </ScrollView>
-                </View>
+                            {hymn.has_chorus && stanzaIndex === 0 && hymn.chorus && (
+                                <View style={styles.chorusContainer}>
+                                    <Text style={styles.chorusLabel}>Chorus:</Text>
+                                    <View style={styles.chorus}>
+                                        {hymn.chorus.split('\n').map((line: string, lineIndex: number) => (
+                                            <Text key={lineIndex} style={styles.chorusLine}>
+                                                {line || '\u00A0'}
+                                            </Text>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                    ))}
 
-            </Animated.View>
-        </GestureDetector>
+                </ScrollView>
+            </View>
+
+        </Animated.View>
     );
 }
 
@@ -210,7 +190,7 @@ const styles = StyleSheet.create({
     stanzaNumber: {
         fontFamily: 'Cormorant-Bold',
         fontSize: 18,
-        color: '#64748B', // Subdued color for stanza numbers
+        color: '#64748B',
         textAlign: 'left',
         marginBottom: 4,
     },
@@ -257,3 +237,4 @@ const styles = StyleSheet.create({
 
 
 });
+

@@ -5,27 +5,22 @@ import { router } from 'expo-router';
 
 export default function PrayerLayout() {
 
-    const handleBackPress = () => {
-        router.back();
-    };
-
     return (
-        <Stack>
+        <Stack
+            screenOptions={{ headerShown: false }}
+        >
+            <Stack.Screen name="index" />
             <Stack.Screen
-                name="index"
-                options={{ headerShown: false }}
-            />
-            <Stack.Screen
-                name="prayers"
+                name="[id]"
                 options={{
-                    headerShown: true,
-                    title: "Prayer Category",
-                    headerTitleAlign: 'center',
+                    presentation: 'card',
+                    animation: 'slide_from_right',
+                    title: 'Prayer',
                     headerLeft: () => (
-                        <TouchableOpacity onPress={handleBackPress}>
+                        <TouchableOpacity onPress={() => router.back()}>
                             <Ionicons name="arrow-back" size={24} color="#000" />
                         </TouchableOpacity>
-                    ),
+                    )
                 }}
             />
         </Stack>

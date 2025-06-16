@@ -12,6 +12,7 @@ export async function initUserDb() {
       await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
     }
 
+    // Table for favorite scriptures
     userDb.execSync(`
       CREATE TABLE IF NOT EXISTS favorites (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +21,16 @@ export async function initUserDb() {
       );
     `);
 
-    // Initialize comments table
+    // Table for hymn favorites
+    userDb.execSync(`
+      CREATE TABLE IF NOT EXISTS favorite_hymns (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hymn_id INTEGER UNIQUE NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Table for user comments
     userDb.execSync(`
       CREATE TABLE IF NOT EXISTS comments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +40,7 @@ export async function initUserDb() {
       );
     `);
 
-    // Initialize read_chapters table
+    // Table for read chapters
     userDb.execSync(`
       CREATE TABLE IF NOT EXISTS read_chapters (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

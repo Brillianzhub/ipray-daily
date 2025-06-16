@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 interface Category {
-    id: number;
-    title: string;
+    prayer_category: string;  // Changed from 'title' to 'prayer_category'
 }
 
 interface PrayerCategoriesProps {
     categories: Category[];
-    isLoading: boolean;
-    onSelectCategory: (categoryTitle: string) => void;
+    onSelectCategory: (categoryName: string) => void;
 }
 
-const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, isLoading, onSelectCategory }) => {
+const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, onSelectCategory }) => {
     const [showAll, setShowAll] = useState(false);
 
     const getRandomColor = () => {
@@ -21,10 +19,6 @@ const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, isLoadi
     };
 
     const visibleCategories = showAll ? categories : categories.slice(0, 9);
-
-    // if (isLoading) {
-    //     return <ActivityIndicator size="large" color="#6B4E71" style={styles.loader} />;
-    // }
 
     return (
         <View style={styles.categoriesContainer}>
@@ -38,16 +32,20 @@ const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, isLoadi
             </View>
 
             <View style={styles.categoryGrid}>
-                {visibleCategories.map((category) => (
+                {visibleCategories.map((category, index) => (
                     <TouchableOpacity
-                        key={category.id}
+                        key={index}  // Using index as key since we don't have unique IDs
                         style={styles.categoryCard}
-                        onPress={() => onSelectCategory(category.title)}
+                        onPress={() => onSelectCategory(category.prayer_category)}  // Changed to prayer_category
                     >
                         <View style={[styles.iconContainer, { backgroundColor: getRandomColor() }]}>
-                            <Text style={styles.iconText}>{category.title.slice(0, 3).toUpperCase()}</Text>
+                            <Text style={styles.iconText}>
+                                {category.prayer_category.slice(0, 3).toUpperCase()}
+                            </Text>
                         </View>
-                        <Text style={styles.categoryTitle}>{category.title}</Text>
+                        <Text style={styles.categoryTitle}>
+                            {category.prayer_category}  {/* Changed to prayer_category */}
+                        </Text>
                     </TouchableOpacity>
                 ))}
             </View>
@@ -59,7 +57,8 @@ const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, isLoadi
 
 const styles = StyleSheet.create({
     categoriesContainer: {
-        padding: 20,
+        // padding: 20,
+        marginVertical: 20
     },
     categoryHeader: {
         flexDirection: 'row',
@@ -87,14 +86,14 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     categoryCard: {
-        width: '30%',
+        width: '28%',
         alignItems: 'center',
         marginBottom: 16,
     },
     iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,

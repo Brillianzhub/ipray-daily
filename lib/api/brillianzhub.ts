@@ -194,33 +194,3 @@ export const getSermonsCategories = async (): Promise<SermonCategory[]> => {
         throw new Error('Error fetching categories: ' + (error as Error).message);
     }
 };
-
-interface RemoteHymn {
-    id: number;
-    title: string;
-    author: string | null;
-    year: number | null;
-    has_chorus: boolean;
-    chorus: string;
-    stanzas: {
-        stanza_number: number;
-        text: string;
-    }[];
-}
-
-interface ApiResponse {
-    count: number;
-    results: RemoteHymn[];
-}
-
-export async function fetchHymnsFromApi(): Promise<RemoteHymn[]> {
-    try {
-        const response = await axios.get<ApiResponse>('https://www.brillianzhub.com/hymns/');
-
-        return response.data.results;
-
-    } catch (error) {
-        console.error('Failed to fetch hymns:', error);
-        throw error;
-    }
-}

@@ -9,6 +9,7 @@ export interface Verse {
     chapter_number: number;
     verse_number: number;
     text: string;
+    verse: string;
 }
 
 export interface BibleBook {
@@ -316,3 +317,52 @@ export async function getVerseCount(
         await db.closeAsync();
     }
 }
+
+
+type ScriptureReference = {
+    book: string;
+    chapter: number;
+    verseStart: number;
+    verseEnd?: number;
+};
+
+export function parseScriptureReference(ref: string): ScriptureReference | undefined {
+    const regex = /^([\dA-Za-z\s]+)\s+(\d+):(\d+)(?:-(\d+))?$/;
+    const match = ref.trim().match(regex);
+
+    if (!match) return undefined;
+
+    const [, book, chapter, verseStart, verseEnd] = match;
+
+    return {
+        book: book.trim(),
+        chapter: parseInt(chapter, 10),
+        verseStart: parseInt(verseStart, 10),
+        verseEnd: verseEnd ? parseInt(verseEnd, 10) : undefined,
+    };
+}
+
+
+export async function getVersesRange(
+    book: string,
+    chapter: number,
+    verseStart: number,
+    verseEnd?: number,
+    version: BibleVersion = 'KJV'
+): Promise<Verse[]> {
+    const db = await openDatabase(version as BibleVersion);
+
+    try {
+        const end = verseEnd ?? verseStart; // handle single verse case
+
+        const rows = await db.getAllAsync<Verse>(
+            'SELECT * FROM verses WHERE book_name = ? AND chapter_number = ? AND verse_number BETWEEN ? AND ?',
+            [book, chapter, verseStart, end]
+        );
+
+        return rows;
+    } finally {
+        await db.closeAsync();
+    }
+}
+
