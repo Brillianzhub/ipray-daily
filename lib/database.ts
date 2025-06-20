@@ -282,24 +282,81 @@ export async function getChapter(
 }
 
 
+// export async function searchVerses(
+//     query: string,
+//     limit: number = 20,
+//     version: BibleVersion = 'KJV'
+// ): Promise<Verse[]> {
+//     const db = await openDatabase(version as BibleVersion);
+
+//     try {
+//         const rows = await db.getAllAsync<Verse>(
+//             'SELECT * FROM verses WHERE text LIKE ? LIMIT ?',
+//             [`%${query}%`, limit]
+//         );
+//         return rows;
+//     } finally {
+//         await db.closeAsync();
+//     }
+// }
+
 export async function searchVerses(
     query: string,
     limit: number = 20,
-    version: BibleVersion = 'KJV'
+    version: BibleVersion = 'KJV',
+    options: {
+        exactPhrase?: boolean;
+        matchAllWords?: boolean;
+        matchAnyWord?: boolean;
+        bookFilter?: string[]; // Optional book names to filter
+    } = {}
 ): Promise<Verse[]> {
-    const db = await openDatabase(version as BibleVersion);
+    const db = await openDatabase(version);
 
     try {
+        // Normalize query and prepare search terms
+        const normalizedQuery = query.trim().toLowerCase();
+        const words = normalizedQuery.split(/\s+/).filter(w => w.length > 0);
+
+        if (words.length === 0) {
+            return [];
+        }
+
+        // Build WHERE clauses
+        const whereClauses: string[] = [];
+        const params: any[] = [];
+
+        // Text search conditions
+        if (options.exactPhrase) {
+            whereClauses.push('LOWER(text) LIKE ?');
+            params.push(`%${normalizedQuery}%`);
+        } else if (options.matchAllWords) {
+            whereClauses.push(words.map(() => 'LOWER(text) LIKE ?').join(' AND '));
+            params.push(...words.map(w => `%${w}%`));
+        } else {
+            whereClauses.push(words.map(() => 'LOWER(text) LIKE ?').join(' OR '));
+            params.push(...words.map(w => `%${w}%`));
+        }
+
+        // Book filter if specified
+        if (options.bookFilter?.length) {
+            whereClauses.push(`book IN (${options.bookFilter.map(() => '?').join(',')})`);
+            params.push(...options.bookFilter);
+        }
+
+        const fullWhereClause = whereClauses.join(' AND ');
+
+        // Execute query
         const rows = await db.getAllAsync<Verse>(
-            'SELECT * FROM verses WHERE text LIKE ? LIMIT ?',
-            [`%${query}%`, limit]
+            `SELECT * FROM verses WHERE ${fullWhereClause} LIMIT ?`,
+            [...params, limit]
         );
+
         return rows;
     } finally {
         await db.closeAsync();
     }
 }
-
 
 export async function getVerseCount(
     book: string,

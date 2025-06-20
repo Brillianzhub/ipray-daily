@@ -112,13 +112,15 @@ export default function PrayerScreen() {
                     categories={categories}
                     onSelectCategory={(category) => {
                         router.push({
-                            pathname: '/prayer/[id]',
-                            params: { category: category }
+                            pathname: '/prayer/prayers',
+                            params: {
+                                category: category
+                            }
                         });
                     }}
                 />
                 <View style={styles.sectionContainer}>
-                    <Text style={styles.sectionTitle}>Personal Declarations & Requests</Text>
+                    <Text style={styles.sectionTitle}>Personal Requests</Text>
                 </View>
                 {isAddingPrayer ? (
                     <PrayerForm

@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Dimensions } from 'react-native';
-// import Animated from 'react-native-reanimated';
+import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity, Share, Alert } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import { Share2, Copy } from 'lucide-react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+
+
 import { parseScriptureReference, getVersesRange } from '@/lib/database';
 import { Prayer } from '@/lib/prayers';
 import { Animated } from 'react-native';
@@ -20,6 +24,20 @@ type Props = {
 
 const PrayerCard = ({ item, scale, opacity }: Props) => {
     const [verseText, setVerseText] = useState<string>('');
+
+
+    const handleShare = async (text: string) => {
+        try {
+            await Share.share({ message: text });
+        } catch (error: any) {
+            Alert.alert('Error sharing', error.message);
+        }
+    };
+
+    const handleCopy = async (text: string) => {
+        await Clipboard.setStringAsync(text);
+        Alert.alert('Copied to clipboard');
+    };
 
 
     useEffect(() => {
@@ -43,6 +61,24 @@ const PrayerCard = ({ item, scale, opacity }: Props) => {
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled
             >
+                <View style={styles.actionButtonsContainer}>
+                    <TouchableOpacity >
+                        <Share2 size={22} color="#6B7280" style={styles.iconButton} />
+                    </TouchableOpacity>
+                    <TouchableOpacity >
+                        <Copy size={22} color="#6B7280" style={styles.iconButton} />
+                    </TouchableOpacity>
+                </View>
+                <View style={styles.categoryContainer}>
+                    <MaterialIcons name="category" size={20} color="#0284c7" />
+                    <Text style={styles.categoryText}>
+                        {item?.prayer_category
+                            ?.toLowerCase()
+                            .split(' ')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ')}
+                    </Text>
+                </View>
                 <View style={styles.bibleVerseContainer}>
                     <Text style={styles.bibleVerseText}>
                         <Text style={{ color: '#F59E0B' }}>{item.prayer_scripture}</Text>
@@ -60,7 +96,7 @@ export default PrayerCard;
 const styles = StyleSheet.create({
     prayerCard: {
         width: CARD_WIDTH,
-        height: height * 0.7,
+        height: height * 0.62,
         padding: 24,
         justifyContent: 'center',
         alignItems: 'flex-start',
@@ -75,8 +111,8 @@ const styles = StyleSheet.create({
     },
     scrollViewContent: {
         flexGrow: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        // justifyContent: 'center',
+        // alignItems: 'center',
     },
     bibleVerseContainer: {},
     bibleVerseText: {
@@ -101,4 +137,26 @@ const styles = StyleSheet.create({
         marginTop: 16,
         textAlign: 'justify',
     },
+    actionButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginBottom: 8,
+        paddingRight: 8,
+    },
+    iconButton: {
+        marginLeft: 10,
+        marginBottom: 10
+    },
+    categoryContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    categoryText: {
+        fontFamily: 'Cormorant-Bold',
+        fontSize: 18,
+        color: '#4B5563',
+        marginLeft: 8,
+    },
+
 })

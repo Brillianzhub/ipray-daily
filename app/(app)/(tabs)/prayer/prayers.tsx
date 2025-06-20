@@ -154,21 +154,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACER_WIDTH,
         alignItems: 'center',
     },
-    prayerCard: {
-        width: CARD_WIDTH,
-        height: height * 0.7,
-        padding: 24,
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        marginHorizontal: CARD_MARGIN,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
-    },
 
     noPrayersText: {
         fontFamily: 'Inter-Regular',
@@ -206,39 +191,3 @@ const styles = StyleSheet.create({
 });
 
 
-// import { StyleSheet, Text, View } from 'react-native';
-// import React, { useState, useEffect } from 'react';
-// import { useLocalSearchParams, useNavigation } from 'expo-router';
-
-// type Params = {
-//     category?: string;
-// };
-
-// const prayers = () => {
-
-//     const { category } = useLocalSearchParams<{ category?: string }>();
-//     const [prayers, setPrayers] = useState<Prayer[]>([]);
-
-//     useEffect(() => {
-//         if (typeof category === 'string') {
-//             const fetchPrayers = async () => {
-//                 const fetchedPrayers = await DatabaseService.fetchPrayersByCategory(category);
-//                 setPrayers(fetchedPrayers || []);
-//             };
-//             fetchPrayers();
-//         }
-//     }, [category]);
-
-
-//     console.log(prayers)
-
-//     return (
-//         <View>
-//             <Text>prayers</Text>
-//         </View>
-//     )
-// }
-
-// export default prayers
-
-// const styles = StyleSheet.create({})

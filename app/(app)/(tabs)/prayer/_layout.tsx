@@ -11,7 +11,7 @@ export default function PrayerLayout() {
         >
             <Stack.Screen name="index" />
             <Stack.Screen
-                name="[id]"
+                name="prayers"
                 options={{
                     presentation: 'card',
                     animation: 'slide_from_right',

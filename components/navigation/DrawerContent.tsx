@@ -12,6 +12,7 @@ import { usePathname, useRouter } from 'expo-router';
 import { Book, Calendar, Heart, Home, Info, Mail, Moon, Music, HandHelping as PrayingHands, Settings, Sun } from 'lucide-react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useAppTheme } from '@/hooks/useAppTheme';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 
 const menuItems = [
@@ -53,7 +54,7 @@ export default function DrawerContent(props: any) {
       flex: 1,
       borderRadius: 50,
       backgroundColor: colors.background,
-      
+
     },
     header: {
       padding: 16,
@@ -186,8 +187,14 @@ export default function DrawerContent(props: any) {
             style={[styles.tabItem, pathname.includes('/prayer') && styles.activeTab]}
             onPress={() => router.push('/prayer')}
           >
-            <PrayingHands size={24} color={pathname.includes('/prayer') ? colors.primary : colors.text.secondary} />
-            <Text style={[styles.tabLabel, pathname.includes('/prayer') && styles.activeTabLabel]}>Prayer</Text>
+            <MaterialCommunityIcons
+              name="hands-pray"
+              size={24}
+              color={pathname.includes('/prayer') ? colors.primary : colors.text.secondary}
+            />
+            <Text style={[styles.tabLabel, pathname.includes('/prayer') && styles.activeTabLabel]}>
+              Prayer
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity

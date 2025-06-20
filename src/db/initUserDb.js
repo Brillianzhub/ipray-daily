@@ -6,13 +6,11 @@ const userDb = SQLite.openDatabaseSync('user_data.db');
 
 export async function initUserDb() {
   try {
-    // Ensure the SQLite directory exists
     const dirInfo = await FileSystem.getInfoAsync(sqliteDir);
     if (!dirInfo.exists) {
       await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
     }
 
-    // Table for favorite scriptures
     userDb.execSync(`
       CREATE TABLE IF NOT EXISTS favorites (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,7 +19,6 @@ export async function initUserDb() {
       );
     `);
 
-    // Table for hymn favorites
     userDb.execSync(`
       CREATE TABLE IF NOT EXISTS favorite_hymns (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +27,6 @@ export async function initUserDb() {
       );
     `);
 
-    // Table for user comments
     userDb.execSync(`
       CREATE TABLE IF NOT EXISTS comments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +36,6 @@ export async function initUserDb() {
       );
     `);
 
-    // Table for read chapters
     userDb.execSync(`
       CREATE TABLE IF NOT EXISTS read_chapters (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

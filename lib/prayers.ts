@@ -47,5 +47,32 @@ export const DatabaseService = {
         );
         await db.closeAsync();
         return rows;
+    },
+
+    async getDailyFeaturedPrayer(): Promise<Prayer | null> {
+        const db = await openPrayerDatabase();
+        const featuredPrayers = await db.getAllAsync<Prayer>(
+            'SELECT * FROM prayers WHERE featured = 1 ORDER BY prayer_number'
+        );
+        await db.closeAsync();
+
+        if (featuredPrayers.length === 0) return null;
+
+        const today = new Date();
+        const start = new Date(today.getFullYear(), 0, 0);
+        const diff = today.getTime() - start.getTime();
+        const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+        const index = dayOfYear % featuredPrayers.length;
+        return featuredPrayers[index];
+    },
+
+    async countPrayers(): Promise<number> {
+        const db = await openPrayerDatabase();
+        const result = await db.getFirstAsync<{ count: number }>(
+            'SELECT COUNT(*) as count FROM prayers'
+        );
+        await db.closeAsync();
+        return result?.count || 0;
     }
 };

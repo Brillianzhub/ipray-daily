@@ -1,64 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Share, ActivityIndicator } from 'react-native';
 import { Share2, BookOpen } from 'lucide-react-native';
-import axios from 'axios';
 import { useRouter } from 'expo-router';
+import { DatabaseService, Prayer } from '@/lib/prayers';
+import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { parseScriptureReference, getVersesRange } from '@/lib/database';
 
-interface PrayerCategory {
-  id: number;
-  title: string;
-}
-
-interface PrayerData {
-  id: number;
-  text: string;
-  bible_verse: string;
-  bible_quotation: string;
-  category: PrayerCategory;
-}
 
 const DailyPrayerCard: React.FC = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [prayer, setPrayer] = useState<PrayerData | null>(null);
+  const [prayer, setPrayer] = useState<Prayer | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [verseText, setVerseText] = useState<string>('');
+
 
   const router = useRouter();
 
-  const fetchPrayer = async () => {
-    try {
-      const timezoneOffset = new Date().getTimezoneOffset() / -60;
-      const response = await axios.get(`https://www.brillianzhub.com/ipray/prayer-of-the-day/?tz_offset=${timezoneOffset}`);
-
-      if (response.data) {
-        setPrayer(response.data as PrayerData);
-      } else {
-        console.error("Unexpected API response structure:", response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching prayer:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchPrayer();
+    if (!prayer) return;
 
-    const updatePrayerAtMidnight = () => {
-      fetchPrayer();
-      setCurrentDate(new Date());
+    const loadVerse = async () => {
+      const ref = parseScriptureReference(prayer?.prayer_scripture);
+      if (ref) {
+        const { book, chapter, verseStart, verseEnd } = ref;
+        const verses = await getVersesRange(book, chapter, verseStart, verseEnd);
+        const combined = verses.map(v => `${v.text}`).join(' ');
+        setVerseText(combined);
+      }
     };
 
-    const now = new Date();
-    const timeUntilMidnight = new Date(now).setHours(24, 0, 0, 0) - now.getTime();
+    loadVerse();
+  }, [prayer?.prayer_scripture]);
 
-    const timeoutId = setTimeout(() => {
-      updatePrayerAtMidnight();
-      setInterval(updatePrayerAtMidnight, 24 * 60 * 60 * 1000);
-    }, timeUntilMidnight);
 
-    return () => clearTimeout(timeoutId);
+  useEffect(() => {
+    const loadPrayer = async () => {
+      try {
+        const prayer = await DatabaseService.getDailyFeaturedPrayer();
+        setPrayer(prayer);
+      } catch (error) {
+        console.error('Error loading prayer:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPrayer();
   }, []);
+
 
   const formattedDate = currentDate.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -70,7 +60,7 @@ const DailyPrayerCard: React.FC = () => {
   const handleShare = async () => {
     if (!prayer) return;
 
-    const message = `IPray Daily - ${formattedDate}\n\nCategory: ${prayer.category.title}\n\n"${prayer.text}"\n\n${prayer.bible_verse} - ${prayer.bible_quotation}`;
+    const message = `IPray Daily - ${formattedDate}\n\nCategory: ${prayer.prayer_category}\n\n"${prayer.prayer}"\n\n${verseText} - ${prayer.prayer_scripture}`;
 
     try {
       await Share.share({ message });
@@ -80,11 +70,11 @@ const DailyPrayerCard: React.FC = () => {
   };
 
   const handleReadInContext = () => {
-    if (prayer?.bible_quotation) {
+    if (prayer?.prayer_scripture) {
       router.push({
         pathname: '/(app)/(tabs)/bible',
         params: {
-          reference: prayer.bible_quotation
+          reference: prayer.prayer_scripture
         }
       })
     }
@@ -104,19 +94,45 @@ const DailyPrayerCard: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.prayer}>
-        {prayer?.text}
-      </Text>
+
+      <View style={styles.dateContainer}>
+        <MaterialIcons name="date-range" size={20} color="#0284c7" />
+        <Text style={styles.dateText}>{formattedDate}</Text>
+      </View>
+
+      <View style={styles.categoryContainer}>
+        <MaterialIcons name="category" size={20} color="#0284c7" />
+        <Text style={styles.categoryText}>
+          {prayer?.prayer_category
+            ?.toLowerCase()
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ')}
+        </Text>
+      </View>
+
+      <View style={styles.prayerContainer}>
+        <MaterialIcons name="format-quote" size={24} color="#0284c7" />
+        <Text style={styles.prayerText}>
+          {prayer?.prayer}
+        </Text>
+      </View>
+
+      <View style={styles.bibleContainer}>
+        <FontAwesome name="book" size={20} color="#0284c7" />
+        <Text style={styles.bibleText}>
+          {verseText} -{' '}
+          <Text style={{ color: '#F59E0B' }}>
+            {prayer?.prayer_scripture}
+          </Text>
+        </Text>
+      </View>
+
 
       <View style={styles.footer}>
-        <Text style={styles.reference}>{prayer?.bible_quotation}</Text>
-        <TouchableOpacity
-          style={styles.readMoreButton}
-        >
-          <TouchableOpacity style={styles.readMoreButton} onPress={handleReadInContext}>
-            <BookOpen size={16} color="#1E3A8A" />
-            <Text style={styles.readMoreText}>Read in Context</Text>
-          </TouchableOpacity>
+        <BookOpen size={16} color="#0284c7" />
+        <TouchableOpacity style={styles.readMoreButton} onPress={handleReadInContext}>
+          <Text style={styles.reference}>Read in Context</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -149,6 +165,43 @@ const styles = StyleSheet.create({
   shareButton: {
     padding: 4,
   },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  dateText: {
+    fontFamily: 'Cormorant-Bold',
+    fontSize: 18,
+    color: '#1F2937',
+    marginLeft: 8,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  categoryText: {
+    fontFamily: 'Cormorant-Regular',
+    fontSize: 18,
+    color: '#4B5563',
+    marginLeft: 8,
+  },
+  prayerContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  prayerText: {
+    fontFamily: 'Cormorant-Regular',
+    fontSize: 18,
+    color: '#334155',
+    lineHeight: 28,
+    marginBottom: 16,
+    textAlign: 'justify',
+    marginLeft: 8,
+    flex: 1,
+  },
   prayer: {
     fontFamily: 'Cormorant-Regular',
     fontSize: 18,
@@ -158,15 +211,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
   },
+  bibleContainer: {
+    flexDirection: 'row',
+    // alignItems: 'center',
+  },
+  bibleText: {
+    fontFamily: 'Cormorant-Regular',
+    fontSize: 18,
+    color: '#6B7280',
+    fontStyle: 'italic',
+    marginLeft: 8,
+    flex: 1,
+  },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 12
   },
   reference: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 14,
-    color: '#1E3A8A',
+    fontFamily: 'Cormorant-Bold',
+    fontSize: 18,
+    fontStyle: 'italic',
+    fontWeight: 'bold',
+    marginLeft: 8,
+    flex: 1,
+    color: '#0284c7',
   },
   readMoreButton: {
     flexDirection: 'row',
@@ -175,7 +244,7 @@ const styles = StyleSheet.create({
   readMoreText: {
     fontFamily: 'Inter-Medium',
     fontSize: 14,
-    color: '#1E3A8A',
+    color: '#0284c7',
     marginLeft: 4,
   },
 });

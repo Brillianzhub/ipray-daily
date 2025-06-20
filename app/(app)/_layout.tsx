@@ -2,7 +2,7 @@ import { Drawer } from 'expo-router/drawer';
 import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 import DrawerContent from '@/components/navigation/DrawerContent';
-import { Book, Home, Music, HandHelping as PrayingHands } from 'lucide-react-native';
+import { Book, Home } from 'lucide-react-native';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { BibleVersionProvider } from '@/context/BibleVersionContext';
 

@@ -16,7 +16,7 @@ interface DailyDevotionalProps {
         theme?: string;
         devotion?: string;
     };
-    imageUrl?: ImageSourcePropType; 
+    imageUrl?: ImageSourcePropType;
 }
 
 
@@ -74,8 +74,8 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     devotionalDescription: {
-        fontFamily: 'Inter-Regular',
-        fontSize: 14,
+        fontFamily: 'Cormorant-Regular',
+        fontSize: 18,
         lineHeight: 20,
         marginBottom: 16,
     },

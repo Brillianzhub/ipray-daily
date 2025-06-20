@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, AppState, AppStateStatus, TouchableOpacity, Modal, TextInput, Platform } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BookOpen, MessageCircle, Plus, X, Music } from 'lucide-react-native';
+import { BookOpen, X, Music } from 'lucide-react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import DailyPrayerCard from '@/components/home/DailyPrayerCard';
 import FeaturedContent from '@/components/home/FeaturedContent';
@@ -11,10 +10,14 @@ import { useDevotion } from '@/lib/api/devotionApi';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import useStats from '@/lib/api/statsApi';
+import { countHymns } from '@/lib/hymns';
+import { DatabaseService } from '@/lib/prayers';
 
 export default function HomeScreen() {
   const colors = useAppTheme();
   const [isAddEventModalVisible, setIsAddEventModalVisible] = useState(false);
+  const [hymnCount, setHymnCount] = useState<number | null>(null);
+  const [prayerCount, setPrayerCount] = useState<number | null>(null);
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: '',
@@ -31,15 +34,25 @@ export default function HomeScreen() {
   const { devotion, fetchDevotionByDate, isLoading, error } = useDevotion();
   const { stats, loading } = useStats();
 
-  // useEffect(() => {
-  //   const today = new Date().toISOString().split('T')[0];
-  //   fetchDevotionByDate(today);
-  // }, []);
+  useEffect(() => {
+    const hymnStat = async () => {
+      try {
+        const hymnStat = await countHymns();
+        const prayerStat = await DatabaseService.countPrayers();
+        setHymnCount(hymnStat)
+        setPrayerCount(prayerStat)
+      } catch (error) {
+        console.log("Failed to fetch hymn count", error)
+      }
+    };
+
+    hymnStat();
+  }, [])
+
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
 
-    // Fetch immediately
     fetchDevotionByDate(today);
 
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
@@ -56,7 +69,7 @@ export default function HomeScreen() {
     };
   }, [fetchDevotionByDate]);
 
-  
+
   const handleReadMore = () => {
     router.replace({
       pathname: '/Devotion'
@@ -88,13 +101,13 @@ export default function HomeScreen() {
 
           <View style={styles.statItem}>
             <Music size={20} color={colors.primary} />
-            <Text style={[styles.statValue, { color: colors.primary }]}>{stats?.hymns}+</Text>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{hymnCount}+</Text>
             <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Hymns</Text>
           </View>
 
           <View style={styles.statItem}>
             <MaterialCommunityIcons name="hands-pray" size={24} color={colors.primary} />
-            <Text style={[styles.statValue, { color: colors.primary }]}>{stats?.prayer_points}+</Text>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{prayerCount}+</Text>
             <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Prayers</Text>
           </View>
         </View>
@@ -120,45 +133,6 @@ export default function HomeScreen() {
       />
 
       <FeaturedContent />
-
-      <View style={styles.upcomingContainer}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>Upcoming Events</Text>
-          <View style={styles.eventHeaderActions}>
-            <TouchableOpacity onPress={() => setIsAddEventModalVisible(true)} style={styles.addEventButton}>
-              <Plus size={20} color={colors.primary} />
-              <Text style={[styles.addEventText, { color: colors.primary }]}>Add Event</Text>
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Text style={[styles.seeAllText, { color: colors.primary }]}>View Calendar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={[styles.eventCard, { backgroundColor: colors.surface }]}>
-          <View style={[styles.eventDateContainer, { backgroundColor: colors.primary + '15' }]}>
-            <Text style={[styles.eventMonth, { color: colors.primary }]}>OCT</Text>
-            <Text style={[styles.eventDay, { color: colors.primary }]}>15</Text>
-          </View>
-          <View style={styles.eventDetails}>
-            <Text style={[styles.eventTitle, { color: colors.text.primary }]}>Sunday Service</Text>
-            <Text style={[styles.eventTime, { color: colors.text.secondary }]}>10:00 AM - 12:00 PM</Text>
-            <Text style={[styles.eventLocation, { color: colors.text.secondary }]}>Main Sanctuary</Text>
-          </View>
-        </View>
-
-        <View style={[styles.eventCard, { backgroundColor: colors.surface }]}>
-          <View style={[styles.eventDateContainer, { backgroundColor: colors.primary + '15' }]}>
-            <Text style={[styles.eventMonth, { color: colors.primary }]}>OCT</Text>
-            <Text style={[styles.eventDay, { color: colors.primary }]}>18</Text>
-          </View>
-          <View style={styles.eventDetails}>
-            <Text style={[styles.eventTitle, { color: colors.text.primary }]}>Prayer Meeting</Text>
-            <Text style={[styles.eventTime, { color: colors.text.secondary }]}>7:00 PM - 8:30 PM</Text>
-            <Text style={[styles.eventLocation, { color: colors.text.secondary }]}>Prayer Room</Text>
-          </View>
-        </View>
-      </View>
 
       <Modal
         visible={isAddEventModalVisible}

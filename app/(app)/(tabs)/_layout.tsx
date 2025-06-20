@@ -1,16 +1,18 @@
 import { Tabs } from 'expo-router/tabs';
-import { Book, Home, Music, HandHelping as PrayingHands } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
+import { Book, Home, Music, NotebookPen } from 'lucide-react-native';
+import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  
+
   return (
     <Tabs
       screenOptions={{
         headerShown: true,
-        tabBarActiveTintColor: '#1E3A8A',
+        tabBarActiveTintColor: '#0284c7',
         tabBarInactiveTintColor: '#64748B',
         tabBarStyle: {
           height: 60 + insets.bottom,
@@ -32,7 +34,7 @@ export default function TabLayout() {
         headerTitleStyle: {
           fontFamily: 'Cormorant-Bold',
           fontSize: 22,
-          color: '#1E3A8A',
+          color: '#0284c7',
         },
         headerStyle: {
           backgroundColor: '#FFFFFF',
@@ -55,7 +57,9 @@ export default function TabLayout() {
         name="prayer"
         options={{
           title: 'Prayer',
-          tabBarIcon: ({ color, size }) => <PrayingHands size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="hands-pray" size={size} color={color} />
+          ),
           headerTitle: 'Prayer Journal',
         }}
       />
@@ -65,6 +69,14 @@ export default function TabLayout() {
           title: 'Hymns',
           tabBarIcon: ({ color, size }) => <Music size={size} color={color} />,
           headerTitle: 'Hymn Collection',
+        }}
+      />
+      <Tabs.Screen
+        name="notes"
+        options={{
+          title: 'Notes',
+          tabBarIcon: ({ color, size }) => <NotebookPen size={size} color={color} />,
+          headerTitle: 'My Notes',
         }}
       />
       <Tabs.Screen

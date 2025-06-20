@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 interface Category {
-    prayer_category: string;  // Changed from 'title' to 'prayer_category'
+    prayer_category: string;
 }
 
 interface PrayerCategoriesProps {
@@ -34,9 +34,9 @@ const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, onSelec
             <View style={styles.categoryGrid}>
                 {visibleCategories.map((category, index) => (
                     <TouchableOpacity
-                        key={index}  // Using index as key since we don't have unique IDs
+                        key={index}
                         style={styles.categoryCard}
-                        onPress={() => onSelectCategory(category.prayer_category)}  // Changed to prayer_category
+                        onPress={() => onSelectCategory(category.prayer_category)}
                     >
                         <View style={[styles.iconContainer, { backgroundColor: getRandomColor() }]}>
                             <Text style={styles.iconText}>
@@ -44,7 +44,11 @@ const PrayerCategories: React.FC<PrayerCategoriesProps> = ({ categories, onSelec
                             </Text>
                         </View>
                         <Text style={styles.categoryTitle}>
-                            {category.prayer_category}  {/* Changed to prayer_category */}
+                            {category.prayer_category
+                                .toLowerCase()
+                                .split(' ')
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ')}
                         </Text>
                     </TouchableOpacity>
                 ))}
@@ -91,16 +95,16 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     iconContainer: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 8,
     },
     iconText: {
         fontFamily: 'Inter-Bold',
-        fontSize: 14,
+        fontSize: 12,
         color: '#FFFFFF',
     },
     categoryTitle: {
