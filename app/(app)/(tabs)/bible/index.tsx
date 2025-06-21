@@ -145,11 +145,13 @@ export default function BibleScreen() {
     useEffect(() => {
         const checkReadStatus = async () => {
             if (selectedBook?.name && selectedChapter) {
-                setIsChapterCompleted(isChapterRead(selectedBook.name, selectedChapter));
+                const isRead = await isChapterRead(selectedBook.name, selectedChapter);
+                setIsChapterCompleted(isRead);
             }
         };
         checkReadStatus();
     }, [selectedBook?.name, selectedChapter]);
+
 
 
     const filteredBooks = selectedTestament === 'all'
@@ -294,8 +296,8 @@ export default function BibleScreen() {
         }
     };
 
-    const handleFetchFavorites = () => {
-        const favorites = getAllFavorites();
+    const handleFetchFavorites = async () => {
+        const favorites = await getAllFavorites();
         const validFavorites = favorites
             .filter((fav) => fav.verse_id !== null)
             .map((fav) => fav.verse_id as number);
@@ -307,8 +309,8 @@ export default function BibleScreen() {
         handleFetchFavorites();
     }, [selectedBook, selectedChapter]);
 
-    const handleFetchCommentsForChapter = (chapterVerses: Verse[]) => {
-        const allComments = getCommentsForVerse();
+    const handleFetchCommentsForChapter = async (chapterVerses: Verse[]) => {
+        const allComments = await getCommentsForVerse();
         const verseIds = chapterVerses.map(v => v.id);
 
         const filtered = allComments.filter(comment => verseIds.includes(comment.verse_id));

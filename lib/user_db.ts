@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-const userDb = SQLite.openDatabaseSync('user_data.db');
+
 
 export interface Favorite {
     id: number;
@@ -21,158 +21,189 @@ export interface ReadChapter {
     read_at: string;
 }
 
+const USER_DB_NAME = 'user_data.db';
+let userDb: SQLite.SQLiteDatabase | null = null;
 
-export function addFavorite(verseId: number): void {
+export async function getUserDb(): Promise<SQLite.SQLiteDatabase> {
+    if (!userDb) {
+        userDb = await SQLite.openDatabaseAsync(USER_DB_NAME, {
+            useNewConnection: true,
+        });
+    }
+    return userDb;
+}
+
+
+export async function addFavorite(verseId: number): Promise<void> {
     try {
-        userDb.runSync(
+        const db = await getUserDb();
+        await db.runAsync(
             'INSERT INTO favorites (verse_id) VALUES (?)',
             [verseId]
         );
     } catch (err) {
-        console.error('Error adding favorite:', err);
+        console.error('❌ Error adding favorite:', err);
+        throw err;
     }
 }
 
-export function addComment(verseId: number, commentText: string): void {
+export async function addComment(verseId: number, commentText: string): Promise<void> {
     try {
-        userDb.runSync(
+        const db = await getUserDb();
+        await db.runAsync(
             'INSERT INTO comments (verse_id, comment) VALUES (?, ?)',
             [verseId, commentText]
         );
     } catch (err) {
-        console.error('Error adding comment:', err);
+        console.error('❌ Error adding comment:', err);
+        throw err;
     }
 }
 
-export function addFavoriteHymn(hymnId: number): void {
+export async function addFavoriteHymn(hymnId: number): Promise<void> {
     try {
-        userDb.runSync(
+        const db = await getUserDb();
+        await db.runAsync(
             'INSERT INTO favorite_hymns (hymn_id) VALUES (?)',
             [hymnId]
         );
     } catch (err) {
-        console.error('Error adding favorite hymn:', err);
+        console.error('❌ Error adding favorite hymn:', err);
+        throw err;
     }
 }
 
-export function removeFavoriteHymn(hymnId: number): void {
+export async function removeFavoriteHymn(hymnId: number): Promise<void> {
     try {
-        userDb.runSync(
+        const db = await getUserDb();
+        await db.runAsync(
             'DELETE FROM favorite_hymns WHERE hymn_id = ?',
             [hymnId]
         );
     } catch (err) {
-        console.error('Error removing favorite hymn:', err);
+        console.error('❌ Error removing favorite hymn:', err);
+        throw err;
     }
 }
 
-export function getFavoriteHymnIds(): number[] {
+export async function getFavoriteHymnIds(): Promise<number[]> {
     try {
-        const results = userDb.getAllSync<{ hymn_id: number }>(
+        const db = await getUserDb();
+        const results = await db.getAllAsync<{ hymn_id: number }>(
             'SELECT hymn_id FROM favorite_hymns'
         );
         return results.map(row => row.hymn_id);
     } catch (err) {
-        console.error('Error getting favorite hymn IDs:', err);
+        console.error('❌ Error getting favorite hymn IDs:', err);
         return [];
     }
 }
 
-export function getAllFavorites(): Favorite[] {
+export async function getAllFavorites(): Promise<Favorite[]> {
     try {
-        const results = userDb.getAllSync<Favorite>('SELECT * FROM favorites');
+        const db = await getUserDb();
+        const results = await db.getAllAsync<Favorite>('SELECT * FROM favorites');
         return results;
     } catch (err) {
-        console.error('Error fetching favorites:', err);
+        console.error('❌ Error fetching favorites:', err);
         return [];
     }
 }
 
-export function getCommentsForVerse(): Comment[] {
+export async function getCommentsForVerse(): Promise<Comment[]> {
     try {
-        const results = userDb.getAllSync<Comment>('SELECT * FROM comments');
+        const db = await getUserDb();
+        const results = await db.getAllAsync<Comment>('SELECT * FROM comments');
         return results;
     } catch (err) {
-        console.error('Error fetching comments:', err);
+        console.error('❌ Error fetching comments:', err);
         return [];
     }
 }
 
 
-export function updateComment(commentId: number, newText: string): void {
+export async function updateComment(commentId: number, newText: string): Promise<void> {
     try {
-        userDb.runSync(
+        const db = await getUserDb();
+        await db.runAsync(
             'UPDATE comments SET comment = ? WHERE id = ?',
             [newText, commentId]
         );
     } catch (err) {
-        console.error('Error updating comment:', err);
+        console.error('❌ Error updating comment:', err);
+        throw err;
     }
 }
 
-export function removeFavorite(id: number): void {
+export async function removeFavorite(id: number): Promise<void> {
     try {
-        userDb.runSync(
-            'DELETE FROM favorites WHERE id = ?',
-            [id]
-        );
+        const db = await getUserDb();
+        await db.runAsync('DELETE FROM favorites WHERE id = ?', [id]);
     } catch (err) {
-        console.error('Error removing favorite:', err);
+        console.error('❌ Error removing favorite:', err);
+        throw err;
     }
 }
 
-export function markChapterAsRead(bookName: string, chapterNumber: number): void {
+
+export async function markChapterAsRead(bookName: string, chapterNumber: number): Promise<void> {
     try {
-        const existing = userDb.getAllSync<ReadChapter>(
+        const db = await getUserDb();
+
+        const existing = await db.getAllAsync<ReadChapter>(
             'SELECT * FROM read_chapters WHERE book_name = ? AND chapter_number = ?',
             [bookName, chapterNumber]
         );
 
         if (existing.length === 0) {
-            userDb.runSync(
+            await db.runAsync(
                 'INSERT INTO read_chapters (book_name, chapter_number) VALUES (?, ?)',
                 [bookName, chapterNumber]
             );
         }
     } catch (err) {
-        console.error('Error marking chapter as read:', err);
+        console.error('❌ Error marking chapter as read:', err);
+        throw err;
     }
 }
 
-export function getAllReadChapters(): ReadChapter[] {
+export async function getAllReadChapters(): Promise<ReadChapter[]> {
     try {
-        const results = userDb.getAllSync<ReadChapter>(
+        const db = await getUserDb();
+        const results = await db.getAllAsync<ReadChapter>(
             'SELECT * FROM read_chapters ORDER BY read_at DESC'
         );
         return results;
     } catch (err) {
-        console.error('Error fetching read chapters:', err);
+        console.error('❌ Error fetching read chapters:', err);
         return [];
     }
 }
 
-export function getReadChaptersByBook(bookName: string): ReadChapter[] {
+export async function getReadChaptersByBook(bookName: string): Promise<ReadChapter[]> {
     try {
-        const results = userDb.getAllSync<ReadChapter>(
+        const db = await getUserDb();
+        const results = await db.getAllAsync<ReadChapter>(
             'SELECT * FROM read_chapters WHERE book_name = ? ORDER BY chapter_number',
             [bookName]
         );
         return results;
     } catch (err) {
-        console.error('Error fetching read chapters by book:', err);
+        console.error('❌ Error fetching read chapters by book:', err);
         return [];
     }
 }
 
-export function isChapterRead(bookName: string, chapterNumber: number): boolean {
+export async function isChapterRead(bookName: string, chapterNumber: number): Promise<boolean> {
     try {
-        const results = userDb.getAllSync<ReadChapter>(
+        const db = await getUserDb();
+        const results = await db.getAllAsync<ReadChapter>(
             'SELECT * FROM read_chapters WHERE book_name = ? AND chapter_number = ?',
             [bookName, chapterNumber]
         );
         return results.length > 0;
     } catch (err) {
-        console.error('Error checking if chapter is read:', err);
+        console.error('❌ Error checking if chapter is read:', err);
         return false;
     }
 }

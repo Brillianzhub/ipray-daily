@@ -34,22 +34,21 @@ const versionToAsset = {
 } as const;
 
 
-
 export async function openDatabase(version: BibleVersion): Promise<SQLite.SQLiteDatabase> {
     const sqliteDir = `${FileSystem.documentDirectory}SQLite`;
     const dbFileName = versionToDbName[version];
     const dbPath = `${sqliteDir}/${dbFileName}`;
 
-    // Make sure the SQLite directory exists (async)
+    // Ensure the directory exists
     const dirInfo = await FileSystem.getInfoAsync(sqliteDir);
     if (!dirInfo.exists) {
         await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
     }
 
-    // Helper to check if DB is valid (async)
+    // Check if DB already exists and is valid
     const isDbValid = async (path: string) => {
         const info = await FileSystem.getInfoAsync(path);
-        return info.exists && info.size > 1024; // greater than 1KB
+        return info.exists && info.size > 1024;
     };
 
     if (!(await isDbValid(dbPath))) {
@@ -66,7 +65,7 @@ export async function openDatabase(version: BibleVersion): Promise<SQLite.SQLite
                 to: dbPath
             });
 
-            // Verify the copy was successful
+            // Confirm copy
             if (!(await isDbValid(dbPath))) {
                 throw new Error('Database copy verification failed');
             }
@@ -76,75 +75,12 @@ export async function openDatabase(version: BibleVersion): Promise<SQLite.SQLite
         }
     }
 
-    // Android requires special path handling
-    const finalPath = Platform.OS === 'android'
-        ? dbPath.replace(/^file:\/\//, '')
-        : dbFileName;
+    // return SQLite.openDatabaseAsync(dbFileName);
 
-    return SQLite.openDatabaseSync(finalPath);
+    return SQLite.openDatabaseAsync(dbFileName, { useNewConnection: true });
+
 }
 
-
-
-// export async function openDatabase(version: BibleVersion): Promise<SQLite.SQLiteDatabase> {
-//     const sqliteDir = `${FileSystem.documentDirectory}SQLite`;
-//     const dbFileName = versionToDbName[version];
-//     const dbPath = `${sqliteDir}/${dbFileName}`;
-
-//     // Make sure the SQLite directory exists
-//     const sqliteDirInfo = await FileSystem.getInfoAsync(sqliteDir);
-//     if (!sqliteDirInfo.exists) {
-//         await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
-//     }
-
-//     // Debug: list directory contents
-//     const files = await FileSystem.readDirectoryAsync(sqliteDir);
-//     // console.log('SQLite directory contents:', files);
-
-//     // Helper: Check if DB file is valid (exists and not empty)
-//     const isDbValid = async (path: string) => {
-//         const info = await FileSystem.getInfoAsync(path);
-//         return info.exists && info.size > 1024; // greater than 1KB
-//     };
-
-//     const dbIsValid = await isDbValid(dbPath);
-
-//     if (!dbIsValid) {
-//         try {
-//             const asset = Asset.fromModule(versionToAsset[version]);
-//             await asset.downloadAsync();
-
-//             // console.log('Asset local URI:', asset.localUri);
-
-//             if (!asset.localUri || asset.localUri === 'file:' || asset.localUri.length <= 5) {
-//                 throw new Error(`Invalid local URI for asset: ${asset.localUri}`);
-//             }
-
-//             const assetInfo = await FileSystem.getInfoAsync(asset.localUri);
-//             if (assetInfo.exists) {
-//                 console.log('Asset size:', assetInfo.size);
-//             } else {
-//                 console.warn('Asset file does not exist at URI:', asset.localUri);
-//             }
-
-//             // console.log(`Copying DB from ${asset.localUri} to ${dbPath}`);
-//             await FileSystem.copyAsync({
-//                 from: asset.localUri,
-//                 to: dbPath,
-//             });
-
-//             const copiedInfo = await FileSystem.getInfoAsync(dbPath);
-//         } catch (error) {
-//             // console.error(`Failed to initialize ${version} database:`, error);
-//             throw new Error(`Could not copy ${version} database`);
-//         }
-//     } else {
-//         console.log(`${dbFileName} already exists and is valid at ${dbPath}`);
-//     }
-
-//     // Must use just the file name, not full path — works on both platforms
-//     return SQLite.openDatabaseSync(dbFileName);
-// }
 
 
 
@@ -282,23 +218,6 @@ export async function getChapter(
 }
 
 
-// export async function searchVerses(
-//     query: string,
-//     limit: number = 20,
-//     version: BibleVersion = 'KJV'
-// ): Promise<Verse[]> {
-//     const db = await openDatabase(version as BibleVersion);
-
-//     try {
-//         const rows = await db.getAllAsync<Verse>(
-//             'SELECT * FROM verses WHERE text LIKE ? LIMIT ?',
-//             [`%${query}%`, limit]
-//         );
-//         return rows;
-//     } finally {
-//         await db.closeAsync();
-//     }
-// }
 
 export async function searchVerses(
     query: string,
@@ -410,7 +329,7 @@ export async function getVersesRange(
     const db = await openDatabase(version as BibleVersion);
 
     try {
-        const end = verseEnd ?? verseStart; // handle single verse case
+        const end = verseEnd ?? verseStart; 
 
         const rows = await db.getAllAsync<Verse>(
             'SELECT * FROM verses WHERE book_name = ? AND chapter_number = ? AND verse_number BETWEEN ? AND ?',

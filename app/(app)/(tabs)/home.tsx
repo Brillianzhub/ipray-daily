@@ -10,8 +10,8 @@ import { useDevotion } from '@/lib/api/devotionApi';
 import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import useStats from '@/lib/api/statsApi';
-import { countHymns } from '@/lib/hymns';
-import { DatabaseService } from '@/lib/prayers';
+import { usePrayerDatabase } from '@/hooks/usePrayers';
+import { useClearOldHymnsDbOnce } from '@/hooks/useDeleteOldFiles';
 
 export default function HomeScreen() {
   const colors = useAppTheme();
@@ -31,15 +31,20 @@ export default function HomeScreen() {
   };
   const router = useRouter();
 
+  const { countPrayers } = usePrayerDatabase();
+  // const { countHymns } = useHymnsDatabase();
+
+  // useClearOldHymnsDbOnce();
+
   const { devotion, fetchDevotionByDate, isLoading, error } = useDevotion();
   const { stats, loading } = useStats();
 
   useEffect(() => {
     const hymnStat = async () => {
       try {
-        const hymnStat = await countHymns();
-        const prayerStat = await DatabaseService.countPrayers();
-        setHymnCount(hymnStat)
+        // const hymnStat = await countHymns();
+        const prayerStat = await countPrayers();
+        // setHymnCount(hymnStat)
         setPrayerCount(prayerStat)
       } catch (error) {
         console.log("Failed to fetch hymn count", error)
@@ -101,7 +106,7 @@ export default function HomeScreen() {
 
           <View style={styles.statItem}>
             <Music size={20} color={colors.primary} />
-            <Text style={[styles.statValue, { color: colors.primary }]}>{hymnCount}+</Text>
+            <Text style={[styles.statValue, { color: colors.primary }]}>300+</Text>
             <Text style={[styles.statLabel, { color: colors.text.secondary }]}>Hymns</Text>
           </View>
 

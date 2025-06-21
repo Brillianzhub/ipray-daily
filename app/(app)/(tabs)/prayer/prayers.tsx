@@ -11,8 +11,9 @@ import {
     Image,
     ListRenderItem,
 } from 'react-native';
-import { DatabaseService, Prayer } from '@/lib/prayers';
-import { parseScriptureReference, getVersesRange } from '@/lib/database';
+import { Prayer } from '@/lib/prayers';
+import { usePrayerDatabase } from '@/hooks/usePrayers';
+
 
 import React, {
     useLayoutEffect,
@@ -38,12 +39,13 @@ const Prayers = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [refreshing, setRefreshing] = useState(false);
     const scrollX = useRef(new Animated.Value(0)).current;
+    const { fetchPrayersByCategory } = usePrayerDatabase();
 
 
     const fetchPrayers = async () => {
         try {
             if (!refreshing) setIsLoading(true);
-            const fetchedPrayers = await DatabaseService.fetchPrayersByCategory(category as string);
+            const fetchedPrayers = await fetchPrayersByCategory(category as string);
             setPrayers(fetchedPrayers || []);
         } catch (error) {
             console.error('Error fetching prayers:', error);
@@ -59,12 +61,11 @@ const Prayers = () => {
         }
     }, [category]);
 
-
-
     const onRefresh = async () => {
         setRefreshing(true);
         if (category) {
-            await DatabaseService.fetchPrayersByCategory(category);
+            const fetchedPrayers = await fetchPrayersByCategory(category);
+            setPrayers(fetchedPrayers || []);
         }
         setRefreshing(false);
     };

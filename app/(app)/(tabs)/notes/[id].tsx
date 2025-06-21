@@ -34,9 +34,9 @@ export default function NoteDetail() {
 
     const contentInputRef = useRef<TextInput>(null);
 
-    const loadNotes = () => {
+    const loadNotes = async () => {
         try {
-            const results = getAllNotes();
+            const results = await getAllNotes();
             setNotes(results);
         } catch (err) {
             console.error('Failed to load notes:', err);

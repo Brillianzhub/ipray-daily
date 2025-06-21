@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Share, ActivityIndicator } from 'react-native';
 import { Share2, BookOpen } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { DatabaseService, Prayer } from '@/lib/prayers';
+import { usePrayerDatabase, Prayer } from '@/hooks/usePrayers';
+
 import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { parseScriptureReference, getVersesRange } from '@/lib/database';
 
@@ -13,6 +14,7 @@ const DailyPrayerCard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [verseText, setVerseText] = useState<string>('');
 
+  const { getDailyFeaturedPrayer } = usePrayerDatabase();
 
   const router = useRouter();
 
@@ -37,7 +39,7 @@ const DailyPrayerCard: React.FC = () => {
   useEffect(() => {
     const loadPrayer = async () => {
       try {
-        const prayer = await DatabaseService.getDailyFeaturedPrayer();
+        const prayer = await getDailyFeaturedPrayer();
         setPrayer(prayer);
       } catch (error) {
         console.error('Error loading prayer:', error);
@@ -213,13 +215,11 @@ const styles = StyleSheet.create({
   },
   bibleContainer: {
     flexDirection: 'row',
-    // alignItems: 'center',
   },
   bibleText: {
     fontFamily: 'Cormorant-Regular',
     fontSize: 18,
-    color: '#6B7280',
-    fontStyle: 'italic',
+    color: '#334155',
     marginLeft: 8,
     flex: 1,
   },
@@ -231,7 +231,6 @@ const styles = StyleSheet.create({
   reference: {
     fontFamily: 'Cormorant-Bold',
     fontSize: 18,
-    fontStyle: 'italic',
     fontWeight: 'bold',
     marginLeft: 8,
     flex: 1,

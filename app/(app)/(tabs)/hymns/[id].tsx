@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { fetchHymnDetails, HymnWithStanzas } from '@/lib/hymns';
+import { HymnWithStanzas, useHymnsDatabase } from '@/hooks/useHymns';
 
 
 export default function HymnDetail() {
@@ -10,7 +10,9 @@ export default function HymnDetail() {
     const [hymn, setHymn] = useState<HymnWithStanzas | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const { fetchHymnDetails } = useHymnsDatabase();
 
+    
     useEffect(() => {
         const loadHymn = async () => {
             try {

@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { Search, Star } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import { fetchHymns, BasicHymn, toggleFavoriteHymn, getAllFavoriteHymnIds } from '@/lib/hymns';
+import { useHymnsDatabase, BasicHymn } from '@/hooks/useHymns';
+
 
 export default function HymnsScreen() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -20,15 +21,19 @@ export default function HymnsScreen() {
     const [hymns, setHymns] = useState<BasicHymn[]>([]);
     const router = useRouter();
 
+    const { fetchHymns, toggleFavoriteHymn, getAllFavoriteHymnIds } = useHymnsDatabase();
+
 
     const loadHymns = async () => {
         try {
-            const data = await fetchHymns();
+            const hymns = await fetchHymns();
             const favIds = getAllFavoriteHymnIds();
-            const hymnsWithFavorite = data.map(hymn => ({
+
+            const hymnsWithFavorite = hymns.map(hymn => ({
                 ...hymn,
                 favorite: favIds.includes(hymn.id),
             }));
+
             setHymns(hymnsWithFavorite);
         } catch (err) {
             console.error('Error loading hymns:', err);

@@ -8,8 +8,10 @@ import PrayerForm from '@/components/prayers/AddPrayers';
 import PrayerList from '@/components/prayers/PersonalPrayers';
 import { getAllPrayers } from '@/lib/user_prayers';
 import { useRouter } from 'expo-router';
-import { DatabaseService, Category } from '@/lib/prayers';
+import { Category } from '@/lib/prayers';
 import WelcomeCard from '@/components/prayers/WelcomeCard';
+import { usePrayerDatabase } from '@/hooks/usePrayers';
+
 
 const PRAYER_CATEGORIES = [
     { id: 'all', name: 'All Prayers' },
@@ -42,10 +44,16 @@ export default function PrayerScreen() {
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
+    const {
+        fetchCategories,
+        fetchFeaturedPrayers,
+    } = usePrayerDatabase();
+
+
     useEffect(() => {
         const loadPrayers = async () => {
             try {
-                const dbPrayers = getAllPrayers();
+                const dbPrayers = await getAllPrayers();
                 setPrayers(dbPrayers);
             } catch (err) {
                 console.error('Failed to load prayers:', err);
@@ -60,8 +68,8 @@ export default function PrayerScreen() {
             try {
                 setLoading(true);
                 const [fetchedCategories, fetchedFeatured] = await Promise.all([
-                    DatabaseService.fetchCategories(),
-                    DatabaseService.fetchFeaturedPrayers()
+                    fetchCategories(),
+                    fetchFeaturedPrayers()
                 ]);
 
                 setCategories(fetchedCategories);
@@ -131,7 +139,7 @@ export default function PrayerScreen() {
                         onSavePrayer={async () => {
                             setIsAddingPrayer(false);
                             try {
-                                const updatedPrayers = getAllPrayers();
+                                const updatedPrayers = await getAllPrayers();
                                 setPrayers(updatedPrayers);
                             } catch (err) {
                                 console.error('Error fetching prayers after save:', err);

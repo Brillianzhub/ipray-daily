@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View, ViewStyle, TextStyle, TouchableOpacity, Animated, Easing } from 'react-native';
 import { useAppTheme } from '@/hooks/useAppTheme';
 import { useRouter } from 'expo-router';
-import { initializeDatabases } from '@/src/db/initialize';
+// import { initializeDatabases } from '@/src/db/initialize';
 
 
 interface AppThemeColors {
@@ -24,12 +24,12 @@ const Index: React.FC = () => {
 
   const router = useRouter();
 
-  useEffect(() => {
-    async function init() {
-      await initializeDatabases();
-    }
-    init();
-  }, []);
+  // useEffect(() => {
+  //   async function init() {
+  //     await initializeDatabases();
+  //   }
+  //   init();
+  // }, []);
 
 
   useEffect(() => {

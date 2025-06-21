@@ -1,5 +1,4 @@
 import * as SQLite from 'expo-sqlite';
-const notesDb = SQLite.openDatabaseSync('notes.db');
 
 export interface Note {
     id: number;
@@ -11,21 +10,32 @@ export interface Note {
     is_favorite: boolean;
 }
 
-
 export interface RawNote {
     id: number;
     title: string;
     content: string;
     category: string;
     date: string;
-    tags: string; // stored as JSON string
+    tags: string; // Stored as JSON string
     is_favorite: number; // 0 or 1
 }
 
-export function insertNotes(notes: Omit<Note, 'id'>[]): void {
+const NOTES_DB_NAME = 'notes.db';
+let notesDb: SQLite.SQLiteDatabase | null = null;
+
+export async function getNotesDb(): Promise<SQLite.SQLiteDatabase> {
+    if (!notesDb) {
+        notesDb = await SQLite.openDatabaseAsync(NOTES_DB_NAME, { useNewConnection: true });
+    }
+    return notesDb;
+}
+
+export async function insertNotes(notes: Omit<Note, 'id'>[]): Promise<void> {
     try {
+        const db = await getNotesDb();
+
         for (const note of notes) {
-            notesDb.runSync(
+            await db.runAsync(
                 `INSERT INTO notes (title, content, category, date, tags, is_favorite)
          VALUES (?, ?, ?, ?, ?, ?)`,
                 [
@@ -39,25 +49,27 @@ export function insertNotes(notes: Omit<Note, 'id'>[]): void {
             );
         }
     } catch (err) {
-        console.error('Error inserting notes:', err);
+        console.error('❌ Error inserting notes:', err);
+        throw err;
     }
 }
 
 
-export function updateNote(
+export async function updateNote(
     id: number,
     updatedNote: {
         title: string;
         content: string;
         category: string;
         tags: string[];
-        date?: string; 
+        date?: string;
     }
-): void {
+): Promise<void> {
     try {
+        const db = await getNotesDb();
         const { title, content, category, tags, date } = updatedNote;
 
-        notesDb.runSync(
+        await db.runAsync(
             `
       UPDATE notes
       SET 
@@ -74,18 +86,20 @@ export function updateNote(
                 category,
                 JSON.stringify(tags),
                 date || new Date().toISOString(),
-                id
+                id,
             ]
         );
     } catch (err) {
-        console.error('Error updating note:', err);
+        console.error('❌ Error updating note:', err);
+        throw err;
     }
 }
 
 
-export function getAllNotes(): Note[] {
+export async function getAllNotes(): Promise<Note[]> {
     try {
-        const results: RawNote[] = notesDb.getAllSync<RawNote>(
+        const db = await getNotesDb();
+        const results: RawNote[] = await db.getAllAsync<RawNote>(
             'SELECT * FROM notes ORDER BY date DESC'
         );
 
@@ -99,26 +113,31 @@ export function getAllNotes(): Note[] {
             is_favorite: !!note.is_favorite,
         }));
     } catch (err) {
-        console.error('Error fetching notes:', err);
+        console.error('❌ Error fetching notes:', err);
         return [];
     }
 }
 
-export function deleteNote(id: number): void {
+
+export async function deleteNote(id: number): Promise<void> {
     try {
-        notesDb.runSync('DELETE FROM notes WHERE id = ?', [id]);
+        const db = await getNotesDb();
+        await db.runAsync('DELETE FROM notes WHERE id = ?', [id]);
     } catch (err) {
-        console.error('Error deleting note:', err);
+        console.error('❌ Error deleting note:', err);
+        throw err;
     }
 }
 
-export function toggleFavorite(id: number, isFavorite: boolean): void {
+export async function toggleFavorite(id: number, isFavorite: boolean): Promise<void> {
     try {
-        notesDb.runSync(
-            'UPDATE notes SET is_favorite = ? WHERE id = ?',
-            [isFavorite ? 1 : 0, id]
-        );
+        const db = await getNotesDb();
+        await db.runAsync('UPDATE notes SET is_favorite = ? WHERE id = ?', [
+            isFavorite ? 1 : 0,
+            id,
+        ]);
     } catch (err) {
-        console.error('Error updating favorite status:', err);
+        console.error('❌ Error updating favorite status:', err);
+        throw err;
     }
 }

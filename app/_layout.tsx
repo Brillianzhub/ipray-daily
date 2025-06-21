@@ -1,16 +1,22 @@
 import { Slot } from 'expo-router';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_700Bold } from '@expo-google-fonts/inter';
 import { CormorantGaramond_400Regular, CormorantGaramond_700Bold } from '@expo-google-fonts/cormorant-garamond';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { SQLiteProvider } from 'expo-sqlite';
+import { initializeDatabases } from '@/src/db/initialize';
+import { deleteBibleDatabases } from '@/hooks/useDeleteOldBibleFiles';
 
-// Prevent the splash screen from auto-hiding on first load
+const PRAYERS_DB_ASSET = require('@/assets/databases/prayers.db');
+
 SplashScreen.preventAutoHideAsync().catch(() => { });
 
 export default function RootLayout() {
     useFrameworkReady();
+
+    const [isReady, setIsReady] = useState(false);
 
     const [fontsLoaded, fontError] = useFonts({
         'Inter-Regular': Inter_400Regular,
@@ -21,21 +27,38 @@ export default function RootLayout() {
     });
 
     const onLayoutRootView = useCallback(async () => {
-        if (fontsLoaded || fontError) {
+        if ((fontsLoaded || fontError) && isReady) {
             await SplashScreen.hideAsync();
         }
-    }, [fontsLoaded, fontError]);
+    }, [fontsLoaded, fontError, isReady]);
 
     useEffect(() => {
         onLayoutRootView();
     }, [onLayoutRootView]);
 
-    // Don't render anything until fonts are loaded
-    if (!fontsLoaded && !fontError) return null;
+    // 🟡 Initialize DBs when fonts are ready
+    useEffect(() => {
+        async function setup() {
+            // await deleteBibleDatabases(); // 🔥 remove old
+            await initializeDatabases();  // 🧱 re-init
+            setIsReady(true);
+        }
+
+        if (fontsLoaded) {
+            setup().catch(console.error);
+        }
+    }, [fontsLoaded]);
+
+    if (!fontsLoaded || !isReady) return null;
 
     return (
         <ThemeProvider>
-            <Slot />
+            <SQLiteProvider
+                databaseName="prayers.db"
+                assetSource={{ assetId: PRAYERS_DB_ASSET }}
+            >
+                <Slot />
+            </SQLiteProvider>
         </ThemeProvider>
     );
 }
