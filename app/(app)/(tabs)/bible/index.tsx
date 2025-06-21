@@ -153,7 +153,6 @@ export default function BibleScreen() {
     }, [selectedBook?.name, selectedChapter]);
 
 
-
     const filteredBooks = selectedTestament === 'all'
         ? bibleBooks
         : bibleBooks.filter(book => book.testament === selectedTestament);

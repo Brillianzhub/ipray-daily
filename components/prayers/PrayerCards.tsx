@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity, Share, Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import { Share2, Copy } from 'lucide-react-native';
+import { Share2, Copy, CircleArrowLeft } from 'lucide-react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 
 
 import { parseScriptureReference, getVersesRange } from '@/lib/database';
 import { Prayer } from '@/lib/prayers';
 import { Animated } from 'react-native';
+import { useRouter } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,18 +26,26 @@ type Props = {
 const PrayerCard = ({ item, scale, opacity }: Props) => {
     const [verseText, setVerseText] = useState<string>('');
 
+    const router = useRouter();
 
     const handleShare = async (text: string) => {
         try {
-            await Share.share({ message: text });
+            await Share.share({
+                message: text,
+                title: 'Faith Declaration'
+            });
         } catch (error: any) {
             Alert.alert('Error sharing', error.message);
         }
     };
 
     const handleCopy = async (text: string) => {
-        await Clipboard.setStringAsync(text);
-        Alert.alert('Copied to clipboard');
+        try {
+            await Clipboard.setStringAsync(text);
+            Alert.alert('Copied to clipboard');
+        } catch (error: any) {
+            Alert.alert('Copy failed', error.message);
+        }
     };
 
 
@@ -62,12 +71,27 @@ const PrayerCard = ({ item, scale, opacity }: Props) => {
                 nestedScrollEnabled
             >
                 <View style={styles.actionButtonsContainer}>
-                    <TouchableOpacity >
-                        <Share2 size={22} color="#6B7280" style={styles.iconButton} />
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <CircleArrowLeft size={22} color="#6B7280" />
                     </TouchableOpacity>
-                    <TouchableOpacity >
-                        <Copy size={22} color="#6B7280" style={styles.iconButton} />
-                    </TouchableOpacity>
+                    <View style={styles.rightIconsContainer}>
+                        <TouchableOpacity onPress={() => handleShare(
+                            `Faith Declaration - ${new Date().toLocaleDateString()}\n\n` +
+                            `${item.prayer_scripture}${verseText ? ` - ${verseText}` : ''}\n\n` +
+                            `${item.prayer}\n\n` +
+                            `IPray Daily`
+                        )}>
+                            <Share2 size={22} color="#6B7280" />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleCopy(
+                            `Faith Declaration - ${new Date().toLocaleDateString()}\n\n` +
+                            `${item.prayer_scripture}${verseText ? ` - ${verseText}` : ''}\n\n` +
+                            `${item.prayer}\n\n` +
+                            `IPray Daily`
+                        )}>
+                            <Copy size={22} color="#6B7280" style={styles.copyIcon} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
                 <View style={styles.categoryContainer}>
                     <MaterialIcons name="category" size={20} color="#0284c7" />
@@ -96,7 +120,7 @@ export default PrayerCard;
 const styles = StyleSheet.create({
     prayerCard: {
         width: CARD_WIDTH,
-        height: height * 0.62,
+        height: height * 0.7,
         padding: 24,
         justifyContent: 'center',
         alignItems: 'flex-start',
@@ -111,15 +135,12 @@ const styles = StyleSheet.create({
     },
     scrollViewContent: {
         flexGrow: 1,
-        // justifyContent: 'center',
-        // alignItems: 'center',
     },
     bibleVerseContainer: {},
     bibleVerseText: {
         fontFamily: 'Cormorant-Regular',
-        fontSize: 20,
+        fontSize: 18,
         color: '#334155',
-        fontStyle: 'italic',
         textAlign: 'justify',
     },
     verseText: {
@@ -139,14 +160,18 @@ const styles = StyleSheet.create({
     },
     actionButtonsContainer: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
-        marginBottom: 8,
-        paddingRight: 8,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 18,
     },
-    iconButton: {
+    rightIconsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    copyIcon: {
         marginLeft: 10,
-        marginBottom: 10
     },
+
     categoryContainer: {
         flexDirection: 'row',
         alignItems: 'center',

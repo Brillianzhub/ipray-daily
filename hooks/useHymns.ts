@@ -62,23 +62,31 @@ export function useHymnsDatabase() {
         }
     }, [db]);
 
-    const toggleFavoriteHymn = useCallback((hymnId: number, currentlyFavorite: boolean): void => {
-        if (currentlyFavorite) {
-            removeFavoriteHymn(hymnId);
-        } else {
-            addFavoriteHymn(hymnId);
+
+    const toggleFavoriteHymn = useCallback(async (hymnId: number, currentlyFavorite: boolean): Promise<void> => {
+        try {
+            if (currentlyFavorite) {
+                await removeFavoriteHymn(hymnId);
+            } else {
+                await addFavoriteHymn(hymnId);
+            }
+        } catch (err) {
+            console.error('Error toggling favorite hymn:', err);
         }
     }, []);
 
-    const getAllFavoriteHymnIds = useCallback((): number[] => {
+
+
+    const getAllFavoriteHymnIds = useCallback(async (): Promise<number[]> => {
         try {
-            const rows = getFavoriteHymnIds(); // uses userDb outside SQLiteProvider
+            const rows = await getFavoriteHymnIds();  // await the Promise here
             return rows;
         } catch (err) {
             console.error('Error fetching favorite hymn IDs:', err);
             return [];
         }
     }, []);
+
 
     return {
         fetchHymns,

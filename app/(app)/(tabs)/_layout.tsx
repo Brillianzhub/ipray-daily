@@ -14,6 +14,7 @@ export default function TabLayout() {
         headerShown: true,
         tabBarActiveTintColor: '#0284c7',
         tabBarInactiveTintColor: '#64748B',
+        headerTitleAlign: 'center',
         tabBarStyle: {
           height: 60 + insets.bottom,
           paddingTop: 8,
@@ -60,7 +61,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="hands-pray" size={size} color={color} />
           ),
-          headerTitle: 'Prayer Journal',
+          headerTitle: 'Faith Declarations',
         }}
       />
       <Tabs.Screen

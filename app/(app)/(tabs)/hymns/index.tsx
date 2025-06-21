@@ -27,7 +27,7 @@ export default function HymnsScreen() {
     const loadHymns = async () => {
         try {
             const hymns = await fetchHymns();
-            const favIds = getAllFavoriteHymnIds();
+            const favIds = await getAllFavoriteHymnIds();
 
             const hymnsWithFavorite = hymns.map(hymn => ({
                 ...hymn,

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { HymnWithStanzas, useHymnsDatabase } from '@/hooks/useHymns';
+import { CircleArrowLeft } from 'lucide-react-native';
 
 
 export default function HymnDetail() {
@@ -12,7 +13,9 @@ export default function HymnDetail() {
     const [error, setError] = useState<string | null>(null);
     const { fetchHymnDetails } = useHymnsDatabase();
 
-    
+    const router = useRouter();
+
+
     useEffect(() => {
         const loadHymn = async () => {
             try {
@@ -94,7 +97,15 @@ export default function HymnDetail() {
                     showsVerticalScrollIndicator={false}
                     nestedScrollEnabled={true}
                 >
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        style={styles.backButton}
+                    >
+                        <CircleArrowLeft size={22} color="#6B7280" />
+                    </TouchableOpacity>
+
                     {hymn.title && <Text style={styles.title}>{hymn.title}</Text>}
+
 
                     <Text style={styles.author}>
                         {[hymn.author, hymn.year].filter(Boolean).join(', ')}
@@ -141,14 +152,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
     },
     backButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    backText: {
-        fontFamily: 'Inter-Medium',
-        fontSize: 16,
-        color: '#1E3A8A',
-        marginLeft: 4,
+        position: 'absolute',
+        left: 5, // Adjust as needed
+        top: 10,  // Adjust as needed
+        zIndex: 1,
     },
     content: {
         flex: 1,
@@ -156,7 +163,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontFamily: 'Cormorant-Bold',
-        fontSize: 26,
+        fontSize: 22,
         color: '#1E293B',
         marginBottom: 8,
         textAlign: 'center',
@@ -188,14 +195,6 @@ const styles = StyleSheet.create({
     navButtonDisabled: {
         opacity: 0.5,
     },
-    navButtonText: {
-        fontFamily: 'Inter-Medium',
-        fontSize: 14,
-        color: '#1E3A8A',
-    },
-    navButtonTextDisabled: {
-        color: '#94A3B8',
-    },
     errorText: {
         fontFamily: 'Inter-Medium',
         fontSize: 16,
@@ -220,7 +219,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Cormorant-Regular',
         fontSize: 20,
         color: '#334155',
-        lineHeight: 20,
+        // lineHeight: 20,
         textAlign: 'center',
         marginBottom: 2,
 
@@ -240,7 +239,7 @@ const styles = StyleSheet.create({
     chorusLabel: {
         fontFamily: 'Cormorant-Bold',
         fontSize: 16,
-        color: '#1E3A8A',
+        color: '#0284c7',
         textAlign: 'center',
         marginBottom: 8,
     },
@@ -258,7 +257,5 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: '#334155',
     },
-
-
 });
 

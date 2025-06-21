@@ -189,9 +189,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
         backgroundColor: '#F1F5F9',
     },
-    selectedCategory: {
-        backgroundColor: '#1E3A8A',
-    },
+
     categoryText: {
         fontFamily: 'Inter-Medium',
         fontSize: 14,

@@ -52,7 +52,7 @@ export default function DrawerContent(props: any) {
   const styles = StyleSheet.create({
     container: {
       flex: 1,
-      borderRadius: 50,
+      borderRadius: 12,
       backgroundColor: colors.background,
 
     },
@@ -107,7 +107,7 @@ export default function DrawerContent(props: any) {
       borderRadius: 8,
     },
     activeTab: {
-      backgroundColor: theme === 'light' ? '#EFF6FF' : '#1E40AF',
+      backgroundColor: theme === 'light' ? '#EFF6FF' : '#0284c7',
     },
     tabLabel: {
       fontFamily: 'Inter-Medium',
@@ -247,7 +247,7 @@ export default function DrawerContent(props: any) {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>© 2025 Faith Journey</Text>
+        <Text style={styles.footerText}>© 2025 IPray Daily</Text>
       </View>
     </SafeAreaView>
   );
